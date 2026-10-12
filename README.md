@@ -1,5 +1,7 @@
 # 💰 Monify – Gestão Financeira Pessoal com Spring Boot
 
+[![CI](https://github.com/LindmanBassi/Monify/actions/workflows/ci.yml/badge.svg)](https://github.com/LindmanBassi/Monify/actions/workflows/ci.yml)
+
 O **Monify** é uma **aplicação web de gestão financeira pessoal**, com backend em **Java 21 e Spring Boot**, frontend em **React** e deploy planejado na **AWS**. O foco do projeto está no **backend**: modelagem de domínio rica, regras de negócio testadas, persistência com **JPA/Hibernate e MySQL**, migrations versionadas com **Flyway** e testes de integração com **Testcontainers** em um banco real.
 
 O escopo atual é o **MVP de controle de gastos**: categorias, receitas e despesas, orçamentos mensais, metas de economia, metas de poupança e dashboard.
@@ -15,8 +17,8 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Testes unitários do domínio e testes de integração com Testcontainers
 - [x] Tratamento global de erros com `ProblemDetail`
 - [x] Ambiente local com Docker Compose
+- [x] CI com GitHub Actions (build e testes a cada push e pull request)
 - [ ] Documentação da API com Swagger / OpenAPI
-- [ ] CI com GitHub Actions
 - [ ] Autenticação (cadastro, login, JWT e refresh token com rotação)
 - [ ] Categorias e transações (CRUD, filtros e paginação)
 - [ ] Orçamentos, metas de economia, metas de poupança e dashboard
@@ -363,11 +365,11 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 - JUnit 5, Mockito e Testcontainers
 - Lombok
 - Maven
+- GitHub Actions
 
 Planejadas nas próximas etapas:
 - OAuth2 Resource Server (JWT com `NimbusJwtEncoder` / `NimbusJwtDecoder`)
 - Swagger / OpenAPI (springdoc)
-- GitHub Actions
 - React, TypeScript, Tailwind CSS e Recharts
 - AWS
 
