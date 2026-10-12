@@ -1,0 +1,413 @@
+# 💰 Monify – Gestão Financeira Pessoal com Spring Boot
+
+O **Monify** é uma **aplicação web de gestão financeira pessoal**, com backend em **Java 21 e Spring Boot**, frontend em **React** e deploy planejado na **AWS**. O foco do projeto está no **backend**: modelagem de domínio rica, regras de negócio testadas, persistência com **JPA/Hibernate e MySQL**, migrations versionadas com **Flyway** e testes de integração com **Testcontainers** em um banco real.
+
+O escopo atual é o **MVP de controle de gastos**: categorias, receitas e despesas, orçamentos mensais, metas de economia, metas de poupança e dashboard.
+
+---
+
+## 🚧 Status do Projeto
+
+Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e com testes.
+
+- [x] Modelo de domínio (entidades, enums e regras de negócio)
+- [x] Schema do banco com Flyway
+- [x] Testes unitários do domínio e testes de integração com Testcontainers
+- [x] Tratamento global de erros com `ProblemDetail`
+- [x] Ambiente local com Docker Compose
+- [ ] Documentação da API com Swagger / OpenAPI
+- [ ] CI com GitHub Actions
+- [ ] Autenticação (cadastro, login, JWT e refresh token com rotação)
+- [ ] Categorias e transações (CRUD, filtros e paginação)
+- [ ] Orçamentos, metas de economia, metas de poupança e dashboard
+- [ ] Frontend em React
+- [ ] Deploy na AWS
+
+---
+
+## 🚀 Funcionalidades (MVP)
+
+- 🔑 Autenticação & Sessão
+  - Cadastro e login
+  - Access token JWT de curta duração + refresh token opaco
+  - Rotação de refresh token e detecção de reuso
+  - Logout com revogação do token
+- 🗂️ Categorias
+  - Categorias padrão copiadas no cadastro do usuário
+  - Tipo fixo (`RECEITA` ou `DESPESA`)
+  - Remover = arquivar (o histórico permanece intacto)
+- 💸 Transações
+  - Registro de receitas e despesas
+  - Histórico com filtros por período, categoria, tipo e descrição, paginado
+- 📊 Orçamentos
+  - Limite mensal por categoria de despesa
+  - Status calculado: `DENTRO_DO_LIMITE`, `PROXIMO_DO_LIMITE` (> 80%) e `ESTOURADO` (> 100%)
+- 🎯 Metas de economia
+  - Gastar menos em uma categoria em um mês, em relação a uma referência: orçamento, mês anterior ou média dos últimos 3 meses
+  - A referência é **congelada** quando o mês da meta começa
+  - Status calculado: `AGUARDANDO_INICIO`, `EM_ANDAMENTO`, `ATINGIDA`, `NAO_ATINGIDA` e `CANCELADA`
+- 🐷 Metas de poupança
+  - Objetivo com valor alvo e prazo opcional
+  - Aportes e resgates, sem permitir acumulado negativo
+  - Conclusão automática ao atingir o alvo
+- 📈 Dashboard
+  - Receitas, despesas e saldo do período
+  - Gastos por categoria e evolução mensal
+  - Tudo calculado com queries agregadas no banco
+
+---
+
+## 🔐 Isolamento de Dados
+
+- O ID do usuário vem **sempre do token**, nunca do request
+- Toda consulta é filtrada pelo dono do recurso
+- Recurso de outro usuário responde **404**, sem revelar que ele existe
+- Cada recurso terá teste de integração provando o isolamento entre usuários
+
+---
+
+## 🧩 Diagramas
+
+### Casos de Uso
+
+```mermaid
+flowchart LR
+    usuario["👤 Usuário"]
+    agendador["⏱️ Agendador"]
+
+    subgraph monify["Monify — controle de gastos"]
+        uc01(["UC01 Criar conta"])
+        uc02(["UC02 Autenticar-se"])
+        uc03(["UC03 Gerenciar categorias"])
+        uc04(["UC04 Registrar transação"])
+        uc05(["UC05 Consultar histórico"])
+        uc06(["UC06 Editar ou excluir transação"])
+        uc07(["UC07 Gerenciar orçamentos"])
+        uc08(["UC08 Acompanhar orçamentos"])
+        uc09(["UC09 Visualizar dashboard"])
+        uc10(["UC10 Gerenciar metas de economia"])
+        uc11(["UC11 Acompanhar metas de economia"])
+        uc12(["UC12 Gerenciar metas de poupança"])
+        uc13(["UC13 Registrar aporte ou resgate"])
+        cancelar(["Cancelar metas vinculadas"])
+        uc14(["UC14 Congelar referência da meta"])
+    end
+
+    usuario --- uc01 & uc02 & uc03 & uc04 & uc05 & uc06 & uc07
+    usuario --- uc08 & uc09 & uc10 & uc11 & uc12 & uc13
+    uc03 -.->|"«include»"| cancelar
+    uc07 -.->|"«include»"| cancelar
+    agendador --- uc14
+
+    classDef caso fill:#eeedfe,stroke:#534ab7,color:#3c3489
+    classDef incluido fill:#e1f5ee,stroke:#0f6e56,color:#085041
+    class uc01,uc02,uc03,uc04,uc05,uc06,uc07,uc08,uc09,uc10,uc11,uc12,uc13 caso
+    class cancelar,uc14 incluido
+```
+
+- **Cancelar metas vinculadas** é incluído ao arquivar uma categoria (UC03) e ao excluir um orçamento (UC07): as metas de economia pendentes são canceladas automaticamente.
+- **Agendador** congela a referência das metas de economia no início do mês.
+
+### Classes
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Usuario {
+        -UUID id
+        -String nome
+        -String email
+        -String senhaHash
+        -Instant criadoEm
+        -Instant atualizadoEm
+    }
+
+    class TokenRenovacao {
+        -UUID id
+        -UUID usuarioId
+        -String tokenHash
+        -Instant expiraEm
+        -Instant revogadoEm
+        -Instant criadoEm
+        +isValido(agora) boolean
+        +isExpirado(agora) boolean
+        +isRevogado() boolean
+        +revogar(agora) void
+    }
+
+    class Categoria {
+        -UUID id
+        -UUID usuarioId
+        -String nome
+        -TipoTransacao tipo
+        -String cor
+        -boolean arquivada
+        +editar(nome, cor) void
+        +arquivar() void
+        +isDespesa() boolean
+        +pertenceA(usuarioId) boolean
+        +validarAtivaDoUsuario(usuarioId) void
+    }
+
+    class Transacao {
+        -UUID id
+        -UUID usuarioId
+        -TipoTransacao tipo
+        -BigDecimal valor
+        -String descricao
+        -LocalDate dataOcorrencia
+        -Instant criadoEm
+        -Instant atualizadoEm
+        +atualizar(categoria, tipo, valor, descricao, dataOcorrencia) void
+    }
+
+    class Orcamento {
+        -UUID id
+        -UUID usuarioId
+        -YearMonth mesReferencia
+        -BigDecimal valorLimite
+        +alterarLimite(valorLimite) void
+        +calcularStatus(gasto) StatusOrcamento
+        +calcularRestante(gasto) BigDecimal
+    }
+
+    class MetaEconomia {
+        -UUID id
+        -UUID usuarioId
+        -YearMonth mesReferencia
+        -TipoReferencia tipoReferencia
+        -BigDecimal valorEconomia
+        -BigDecimal valorReferencia
+        -BigDecimal valorLimite
+        -Instant congeladaEm
+        -Instant canceladaEm
+        +editar(tipoReferencia, orcamento, valorEconomia) void
+        +deveCongelar(mesAtual) boolean
+        +congelar(valorReferencia, agora) void
+        +cancelar(gastoNoMes, mesAtual, agora) void
+        +calcularStatus(gastoNoMes, mesAtual) StatusMetaEconomia
+        +calcularEconomiaRealizada(gastoNoMes) BigDecimal
+    }
+
+    class MetaPoupanca {
+        -UUID id
+        -UUID usuarioId
+        -String nome
+        -BigDecimal valorAlvo
+        -LocalDate prazo
+        -StatusMetaPoupanca status
+        -Instant criadoEm
+        +registrarAporte(valor, data, observacao) Aporte
+        +calcularAcumulado() BigDecimal
+        +calcularFaltante() BigDecimal
+    }
+
+    class Aporte {
+        -UUID id
+        -BigDecimal valor
+        -LocalDate data
+        -String observacao
+    }
+
+    class TipoTransacao {
+        <<enumeration>>
+        RECEITA
+        DESPESA
+    }
+
+    class TipoReferencia {
+        <<enumeration>>
+        ORCAMENTO
+        MES_ANTERIOR
+        MEDIA_TRES_MESES
+        +historicoSuficiente(mesMeta, inicioHistorico) boolean
+    }
+
+    class StatusOrcamento {
+        <<enumeration>>
+        DENTRO_DO_LIMITE
+        PROXIMO_DO_LIMITE
+        ESTOURADO
+    }
+
+    class StatusMetaEconomia {
+        <<enumeration>>
+        CANCELADA
+        AGUARDANDO_INICIO
+        NAO_ATINGIDA
+        ATINGIDA
+        EM_ANDAMENTO
+        +isPendente() boolean
+    }
+
+    class StatusMetaPoupanca {
+        <<enumeration>>
+        ATIVA
+        CONCLUIDA
+        CANCELADA
+    }
+
+    Usuario "1" -- "*" TokenRenovacao : possui
+    Usuario "1" -- "*" Categoria : cria
+    Usuario "1" -- "*" Transacao : registra
+    Usuario "1" -- "*" Orcamento : define
+    Usuario "1" -- "*" MetaEconomia : define
+    Usuario "1" -- "*" MetaPoupanca : define
+
+    Transacao "*" --> "1" Categoria : classificada por
+    Orcamento "*" --> "1" Categoria : limita
+    MetaEconomia "*" --> "1" Categoria : acompanha
+    MetaEconomia "*" --> "0..1" Orcamento : referencia
+    MetaPoupanca "1" *-- "*" Aporte : contém
+
+    Categoria ..> TipoTransacao
+    Transacao ..> TipoTransacao
+    Orcamento ..> StatusOrcamento
+    MetaEconomia ..> TipoReferencia
+    MetaEconomia ..> StatusMetaEconomia
+    MetaPoupanca ..> StatusMetaPoupanca
+```
+
+- `StatusOrcamento` e `StatusMetaEconomia` são **calculados**, nunca armazenados. `StatusMetaPoupanca` é armazenado.
+- Saldos, gastos e acumulados **nunca são armazenados**: sempre calculados a partir das transações e aportes.
+
+---
+
+## 📐 Modelagem e Recursos JPA
+
+Entidades:
+- Usuario
+- TokenRenovacao
+- Categoria
+- Transacao
+- Orcamento
+- MetaEconomia
+- MetaPoupanca
+- Aporte
+
+Relacionamentos utilizados:
+- `@ManyToOne(fetch = LAZY)` (Transacao → Categoria, Orcamento → Categoria, MetaEconomia → Categoria / Orcamento)
+- `@OneToMany` com `cascade = ALL` e `orphanRemoval` (MetaPoupanca → Aporte, composição)
+- Entidades referenciam o dono por `usuarioId`, com chave estrangeira no banco
+
+Outros recursos utilizados:
+- **Entidades ricas**: regras de negócio nos métodos de domínio, sem `@Setter`, testáveis sem Spring nem banco
+- IDs **UUID v7** (ordenados por tempo) gerados pelo Hibernate e armazenados como `BINARY(16)`
+- `AttributeConverter` para gravar `YearMonth` como `DATE` (dia 1)
+- Valores monetários sempre em `BigDecimal` / `DECIMAL(19,2)`
+- Enums em `@Enumerated(EnumType.STRING)`
+- **Coluna gerada** no MySQL para garantir uma única meta de economia ativa por categoria e mês (o MySQL não suporta índice parcial)
+- `ddl-auto=validate`: o schema é controlado apenas pelo Flyway
+
+---
+
+## 🗂️ Arquitetura
+
+API REST no padrão MVC, com pacotes por camada:
+
+```
+br.com.bassi.monify
+├── config/        → segurança, OpenAPI, Clock
+├── controller/    → endpoints REST
+├── service/       → orquestração dos casos de uso
+├── repository/    → Spring Data JPA
+├── domain/        → entidades com regras de negócio
+│   ├── enums/
+│   └── converter/
+├── dto/           → records de request/response
+├── exception/     → exceções de negócio
+├── handler/       → tratamento global de erros
+└── util/          → utilitários (ex.: Dinheiro)
+```
+
+---
+
+## ⚠️ Tratamento de Erros
+
+Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em um `@RestControllerAdvice`.
+
+- Hierarquia de exceções com `MonifyException`, em que cada exceção define seu próprio `ProblemDetail`
+- `400` para erros de validação, com a lista de `campos-invalidos`
+- `401` para requisições não autenticadas
+- `404` para recurso inexistente ou de outro usuário
+- `409` para conflitos de unicidade
+- `422` para violações de regra de negócio
+
+---
+
+## 🧪 Testes
+
+- **Unitários** das regras de domínio (status de metas, congelamento, orçamentos, aportes), sem Spring nem banco
+- **Integração** com **Testcontainers**, em um MySQL real: mapeamento das entidades, constraints e migrations
+- Padrão: `@Nested` por método, `@DisplayName` em português e estrutura Arrange / Act / Assert
+
+```bash
+./mvnw test
+```
+
+> 🐳 Os testes de integração precisam do Docker em execução.
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+- Java 21
+- Spring Boot 4
+- Spring Data JPA / Hibernate 7
+- Spring Security
+- Bean Validation
+- MySQL 8.4
+- Flyway
+- Docker & Docker Compose
+- JUnit 5, Mockito e Testcontainers
+- Lombok
+- Maven
+
+Planejadas nas próximas etapas:
+- OAuth2 Resource Server (JWT com `NimbusJwtEncoder` / `NimbusJwtDecoder`)
+- Swagger / OpenAPI (springdoc)
+- GitHub Actions
+- React, TypeScript, Tailwind CSS e Recharts
+- AWS
+
+---
+
+## ⚙️ Requisitos para rodar o projeto
+
+- JDK 21
+- Docker e Docker Compose
+
+O projeto já possui um `docker-compose.yml` que sobe o MySQL com o banco `monify` na porta **3307**. As tabelas são criadas automaticamente pelo Flyway quando a aplicação inicia.
+
+A conexão pode ser ajustada por variáveis de ambiente:
+
+| Variável      | Padrão                                |
+|---------------|---------------------------------------|
+| `DB_URL`      | `jdbc:mysql://localhost:3307/monify`  |
+| `DB_USERNAME` | `monify`                              |
+| `DB_PASSWORD` | `monify`                              |
+
+---
+
+## 🚀 Como rodar
+
+### 1️⃣ Subir o banco de dados com Docker
+
+```bash
+docker compose up -d
+```
+
+### 2️⃣ Rodar a aplicação Spring Boot
+
+Com o JDK 21 configurado:
+
+```bash
+./mvnw spring-boot:run
+```
+
+Ou rode diretamente pela sua IDE (ex: IntelliJ IDEA).
+
+---
+
+Desenvolvido por Henrique Lindman ✨
