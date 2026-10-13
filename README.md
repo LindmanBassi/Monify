@@ -19,7 +19,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Ambiente local com Docker Compose
 - [x] CI com GitHub Actions (build e testes a cada push e pull request)
 - [ ] Documentação da API com Swagger / OpenAPI
-- [ ] Autenticação (cadastro, login, JWT e refresh token com rotação)
+- [x] Autenticação (cadastro, login, JWT e refresh token com rotação)
 - [ ] Categorias e transações (CRUD, filtros e paginação)
 - [ ] Orçamentos, metas de economia, metas de poupança e dashboard
 - [ ] Frontend em React
@@ -65,6 +65,26 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - Toda consulta é filtrada pelo dono do recurso
 - Recurso de outro usuário responde **404**, sem revelar que ele existe
 - Cada recurso terá teste de integração provando o isolamento entre usuários
+
+---
+
+## 🔑 Autenticação
+
+- Senha armazenada com **BCrypt**
+- **Access token** JWT assinado com HMAC (HS256), válido por 15 minutos
+- **Refresh token** opaco e aleatório, válido por 7 dias; no banco fica **apenas o hash SHA-256**
+- **Rotação**: cada renovação revoga o refresh token usado e emite um novo par
+- **Detecção de reuso**: reutilizar um refresh token já revogado revoga todas as sessões do usuário
+- Falha de login responde sempre "credenciais inválidas", sem revelar se o e-mail existe
+- Erros de autenticação também seguem o formato `ProblemDetail`
+
+| Método | Rota                  | Autenticação | Descrição                                   |
+|--------|-----------------------|--------------|---------------------------------------------|
+| POST   | `/api/auth/cadastro`  | —            | Cria a conta e copia as categorias padrão   |
+| POST   | `/api/auth/login`     | —            | Retorna access token e refresh token        |
+| POST   | `/api/auth/renovar`   | —            | Troca o refresh token por um novo par       |
+| POST   | `/api/auth/logout`    | —            | Revoga o refresh token                      |
+| GET    | `/api/usuarios/me`    | Bearer       | Dados do usuário autenticado                |
 
 ---
 
@@ -341,7 +361,9 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 ## 🧪 Testes
 
 - **Unitários** das regras de domínio (status de metas, congelamento, orçamentos, aportes), sem Spring nem banco
-- **Integração** com **Testcontainers**, em um MySQL real: mapeamento das entidades, constraints e migrations
+- **Unitários** dos services com Mockito (cadastro, login, rotação e reuso de refresh token)
+- **Integração** com **Testcontainers**, em um MySQL real: mapeamento das entidades, constraints, migrations e fluxos da API
+- **Segurança**: token ausente, malformado, expirado ou assinado com outro segredo, rotação e reuso de refresh token
 - Padrão: `@Nested` por método, `@DisplayName` em português e estrutura Arrange / Act / Assert
 
 ```bash
@@ -357,7 +379,7 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 - Java 21
 - Spring Boot 4
 - Spring Data JPA / Hibernate 7
-- Spring Security
+- Spring Security + OAuth2 Resource Server (JWT com `NimbusJwtEncoder` / `NimbusJwtDecoder`)
 - Bean Validation
 - MySQL 8.4
 - Flyway
@@ -368,7 +390,6 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 - GitHub Actions
 
 Planejadas nas próximas etapas:
-- OAuth2 Resource Server (JWT com `NimbusJwtEncoder` / `NimbusJwtDecoder`)
 - Swagger / OpenAPI (springdoc)
 - React, TypeScript, Tailwind CSS e Recharts
 - AWS
@@ -382,13 +403,16 @@ Planejadas nas próximas etapas:
 
 O projeto já possui um `docker-compose.yml` que sobe o MySQL com o banco `monify` na porta **3307**. As tabelas são criadas automaticamente pelo Flyway quando a aplicação inicia.
 
-A conexão pode ser ajustada por variáveis de ambiente:
+A configuração pode ser ajustada por variáveis de ambiente:
 
-| Variável      | Padrão                                |
-|---------------|---------------------------------------|
-| `DB_URL`      | `jdbc:mysql://localhost:3307/monify`  |
-| `DB_USERNAME` | `monify`                              |
-| `DB_PASSWORD` | `monify`                              |
+| Variável      | Padrão                                | Descrição                                  |
+|---------------|---------------------------------------|--------------------------------------------|
+| `DB_URL`      | `jdbc:mysql://localhost:3307/monify`  | URL do banco                               |
+| `DB_USERNAME` | `monify`                              | Usuário do banco                           |
+| `DB_PASSWORD` | `monify`                              | Senha do banco                             |
+| `JWT_SEGREDO` | segredo local de desenvolvimento      | Segredo HMAC do JWT (mínimo de 32 bytes)   |
+
+> ⚠️ Os valores padrão servem apenas para o ambiente local. Em produção, `JWT_SEGREDO` deve ser um segredo forte e exclusivo.
 
 ---
 
