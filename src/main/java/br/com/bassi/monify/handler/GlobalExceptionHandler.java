@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -20,12 +20,12 @@ public class GlobalExceptionHandler {
         return e.toProblemDetail();
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+    @ExceptionHandler(BindException.class)
+    public ProblemDetail handleBindException(BindException e) {
 
         var camposInvalidos = e.getFieldErrors()
                 .stream()
-                .map(fe -> new CampoInvalidoResponse(fe.getField(), fe.getDefaultMessage()))
+                .map(fe -> new CampoInvalidoResponse(fe.getField(), fe.isBindingFailure() ? "Valor inválido" : fe.getDefaultMessage()))
                 .toList();
 
         var pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);

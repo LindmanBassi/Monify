@@ -21,7 +21,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Documentação da API com Swagger / OpenAPI
 - [x] Autenticação (cadastro, login, JWT e refresh token com rotação)
 - [x] Categorias (CRUD, arquivar e desarquivar, isolamento por usuário)
-- [ ] Transações (CRUD, filtros e paginação)
+- [x] Transações (CRUD, histórico com filtros combináveis e paginação)
 - [ ] Orçamentos, metas de economia, metas de poupança e dashboard
 - [ ] Frontend em React
 - [ ] Deploy na AWS
@@ -101,6 +101,25 @@ Todas as rotas exigem token e enxergam apenas as categorias do próprio usuário
 | PUT    | `/api/categorias/{id}`                 | Edita nome e cor (o tipo é fixo)                                 |
 | DELETE | `/api/categorias/{id}`                 | Arquiva (remover = arquivar)                                     |
 | PATCH  | `/api/categorias/{id}/desarquivar`     | Volta a categoria para uso                                       |
+
+---
+
+## 💸 Transações
+
+- O **tipo** (receita ou despesa) vem da categoria escolhida
+- Valor positivo, com no máximo 2 casas decimais; data de hoje ou anterior (fuso de São Paulo)
+- Categoria arquivada não recebe novas transações; transações antigas dela continuam editáveis
+- Exclusão definitiva
+
+| Método | Rota                       | Descrição                                                                   |
+|--------|----------------------------|-----------------------------------------------------------------------------|
+| GET    | `/api/transacoes`          | Histórico paginado, da mais recente para a mais antiga                      |
+| GET    | `/api/transacoes/{id}`     | Detalhe da transação                                                        |
+| POST   | `/api/transacoes`          | Registra a transação                                                        |
+| PUT    | `/api/transacoes/{id}`     | Edita a transação                                                           |
+| DELETE | `/api/transacoes/{id}`     | Exclui a transação                                                          |
+
+Filtros combináveis do histórico: `inicio`, `fim`, `categoriaId`, `tipo` e `texto` (busca na descrição). Paginação com `page` e `size` (máximo de 100 por página), com resposta em `conteudo`, `pagina`, `tamanho`, `totalElementos` e `totalPaginas`.
 
 ---
 
@@ -198,7 +217,7 @@ classDiagram
         -LocalDate dataOcorrencia
         -Instant criadoEm
         -Instant atualizadoEm
-        +atualizar(categoria, tipo, valor, descricao, dataOcorrencia) void
+        +atualizar(categoria, valor, descricao, dataOcorrencia, hoje) void
     }
 
     class Orcamento {
@@ -327,6 +346,7 @@ Entidades:
 
 Relacionamentos utilizados:
 - `@ManyToOne(fetch = LAZY)` (Transacao → Categoria, Orcamento → Categoria, MetaEconomia → Categoria / Orcamento)
+- **Specifications** do Spring Data para os filtros combináveis do histórico, com `@EntityGraph` para carregar a categoria sem N+1
 - `@OneToMany` com `cascade = ALL` e `orphanRemoval` (MetaPoupanca → Aporte, composição)
 - Entidades referenciam o dono por `usuarioId`, com chave estrangeira no banco
 
