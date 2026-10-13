@@ -18,9 +18,10 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Tratamento global de erros com `ProblemDetail`
 - [x] Ambiente local com Docker Compose
 - [x] CI com GitHub Actions (build e testes a cada push e pull request)
-- [ ] Documentação da API com Swagger / OpenAPI
-- [ ] Autenticação (cadastro, login, JWT e refresh token com rotação)
-- [ ] Categorias e transações (CRUD, filtros e paginação)
+- [x] Documentação da API com Swagger / OpenAPI
+- [x] Autenticação (cadastro, login, JWT e refresh token com rotação)
+- [x] Categorias (CRUD, arquivar e desarquivar, isolamento por usuário)
+- [x] Transações (CRUD, histórico com filtros combináveis e paginação)
 - [ ] Orçamentos, metas de economia, metas de poupança e dashboard
 - [ ] Frontend em React
 - [ ] Deploy na AWS
@@ -37,7 +38,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - 🗂️ Categorias
   - Categorias padrão copiadas no cadastro do usuário
   - Tipo fixo (`RECEITA` ou `DESPESA`)
-  - Remover = arquivar (o histórico permanece intacto)
+  - Remover = arquivar (o histórico permanece intacto), com opção de desarquivar
 - 💸 Transações
   - Registro de receitas e despesas
   - Histórico com filtros por período, categoria, tipo e descrição, paginado
@@ -65,6 +66,60 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - Toda consulta é filtrada pelo dono do recurso
 - Recurso de outro usuário responde **404**, sem revelar que ele existe
 - Cada recurso terá teste de integração provando o isolamento entre usuários
+
+---
+
+## 🔑 Autenticação
+
+- Senha armazenada com **BCrypt**
+- **Access token** JWT assinado com HMAC (HS256), válido por 15 minutos
+- **Refresh token** opaco e aleatório, válido por 7 dias; no banco fica **apenas o hash SHA-256**
+- **Rotação**: cada renovação revoga o refresh token usado e emite um novo par
+- **Detecção de reuso**: reutilizar um refresh token já revogado revoga todas as sessões do usuário
+- Falha de login responde sempre "credenciais inválidas", sem revelar se o e-mail existe
+- Erros de autenticação também seguem o formato `ProblemDetail`
+
+| Método | Rota                  | Autenticação | Descrição                                   |
+|--------|-----------------------|--------------|---------------------------------------------|
+| POST   | `/api/auth/cadastro`  | —            | Cria a conta e copia as categorias padrão   |
+| POST   | `/api/auth/login`     | —            | Retorna access token e refresh token        |
+| POST   | `/api/auth/renovar`   | —            | Troca o refresh token por um novo par       |
+| POST   | `/api/auth/logout`    | —            | Revoga o refresh token                      |
+| GET    | `/api/usuarios/me`    | Bearer       | Dados do usuário autenticado                |
+
+---
+
+## 🗂️ Categorias
+
+Todas as rotas exigem token e enxergam apenas as categorias do próprio usuário. Categoria de outro usuário responde **404**.
+
+| Método | Rota                                   | Descrição                                                        |
+|--------|----------------------------------------|------------------------------------------------------------------|
+| GET    | `/api/categorias`                      | Lista as ativas; filtros `tipo` e `incluirArquivadas`            |
+| GET    | `/api/categorias/{id}`                 | Detalhe da categoria                                             |
+| POST   | `/api/categorias`                      | Cria; **409** se já existir o mesmo nome no mesmo tipo           |
+| PUT    | `/api/categorias/{id}`                 | Edita nome e cor (o tipo é fixo)                                 |
+| DELETE | `/api/categorias/{id}`                 | Arquiva (remover = arquivar)                                     |
+| PATCH  | `/api/categorias/{id}/desarquivar`     | Volta a categoria para uso                                       |
+
+---
+
+## 💸 Transações
+
+- O **tipo** (receita ou despesa) vem da categoria escolhida
+- Valor positivo, com no máximo 2 casas decimais; data de hoje ou anterior (fuso de São Paulo)
+- Categoria arquivada não recebe novas transações; transações antigas dela continuam editáveis
+- Exclusão definitiva
+
+| Método | Rota                       | Descrição                                                                   |
+|--------|----------------------------|-----------------------------------------------------------------------------|
+| GET    | `/api/transacoes`          | Histórico paginado, da mais recente para a mais antiga                      |
+| GET    | `/api/transacoes/{id}`     | Detalhe da transação                                                        |
+| POST   | `/api/transacoes`          | Registra a transação                                                        |
+| PUT    | `/api/transacoes/{id}`     | Edita a transação                                                           |
+| DELETE | `/api/transacoes/{id}`     | Exclui a transação                                                          |
+
+Filtros combináveis do histórico: `inicio`, `fim`, `categoriaId`, `tipo` e `texto` (busca na descrição). Paginação com `page` e `size` (máximo de 100 por página), com resposta em `conteudo`, `pagina`, `tamanho`, `totalElementos` e `totalPaginas`.
 
 ---
 
@@ -147,6 +202,7 @@ classDiagram
         -boolean arquivada
         +editar(nome, cor) void
         +arquivar() void
+        +desarquivar() void
         +isDespesa() boolean
         +pertenceA(usuarioId) boolean
         +validarAtivaDoUsuario(usuarioId) void
@@ -161,7 +217,7 @@ classDiagram
         -LocalDate dataOcorrencia
         -Instant criadoEm
         -Instant atualizadoEm
-        +atualizar(categoria, tipo, valor, descricao, dataOcorrencia) void
+        +atualizar(categoria, valor, descricao, dataOcorrencia, hoje) void
     }
 
     class Orcamento {
@@ -290,6 +346,7 @@ Entidades:
 
 Relacionamentos utilizados:
 - `@ManyToOne(fetch = LAZY)` (Transacao → Categoria, Orcamento → Categoria, MetaEconomia → Categoria / Orcamento)
+- **Specifications** do Spring Data para os filtros combináveis do histórico, com `@EntityGraph` para carregar a categoria sem N+1
 - `@OneToMany` com `cascade = ALL` e `orphanRemoval` (MetaPoupanca → Aporte, composição)
 - Entidades referenciam o dono por `usuarioId`, com chave estrangeira no banco
 
@@ -341,7 +398,9 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 ## 🧪 Testes
 
 - **Unitários** das regras de domínio (status de metas, congelamento, orçamentos, aportes), sem Spring nem banco
-- **Integração** com **Testcontainers**, em um MySQL real: mapeamento das entidades, constraints e migrations
+- **Unitários** dos services com Mockito (cadastro, login, rotação e reuso de refresh token)
+- **Integração** com **Testcontainers**, em um MySQL real: mapeamento das entidades, constraints, migrations e fluxos da API
+- **Segurança**: token ausente, malformado, expirado ou assinado com outro segredo, rotação e reuso de refresh token
 - Padrão: `@Nested` por método, `@DisplayName` em português e estrutura Arrange / Act / Assert
 
 ```bash
@@ -357,8 +416,9 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 - Java 21
 - Spring Boot 4
 - Spring Data JPA / Hibernate 7
-- Spring Security
+- Spring Security + OAuth2 Resource Server (JWT com `NimbusJwtEncoder` / `NimbusJwtDecoder`)
 - Bean Validation
+- Swagger / OpenAPI (springdoc)
 - MySQL 8.4
 - Flyway
 - Docker & Docker Compose
@@ -368,8 +428,6 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 - GitHub Actions
 
 Planejadas nas próximas etapas:
-- OAuth2 Resource Server (JWT com `NimbusJwtEncoder` / `NimbusJwtDecoder`)
-- Swagger / OpenAPI (springdoc)
 - React, TypeScript, Tailwind CSS e Recharts
 - AWS
 
@@ -382,13 +440,16 @@ Planejadas nas próximas etapas:
 
 O projeto já possui um `docker-compose.yml` que sobe o MySQL com o banco `monify` na porta **3307**. As tabelas são criadas automaticamente pelo Flyway quando a aplicação inicia.
 
-A conexão pode ser ajustada por variáveis de ambiente:
+A configuração pode ser ajustada por variáveis de ambiente:
 
-| Variável      | Padrão                                |
-|---------------|---------------------------------------|
-| `DB_URL`      | `jdbc:mysql://localhost:3307/monify`  |
-| `DB_USERNAME` | `monify`                              |
-| `DB_PASSWORD` | `monify`                              |
+| Variável      | Padrão                                | Descrição                                  |
+|---------------|---------------------------------------|--------------------------------------------|
+| `DB_URL`      | `jdbc:mysql://localhost:3307/monify`  | URL do banco                               |
+| `DB_USERNAME` | `monify`                              | Usuário do banco                           |
+| `DB_PASSWORD` | `monify`                              | Senha do banco                             |
+| `JWT_SEGREDO` | segredo local de desenvolvimento      | Segredo HMAC do JWT (mínimo de 32 bytes)   |
+
+> ⚠️ Os valores padrão servem apenas para o ambiente local. Em produção, `JWT_SEGREDO` deve ser um segredo forte e exclusivo.
 
 ---
 
@@ -409,6 +470,14 @@ Com o JDK 21 configurado:
 ```
 
 Ou rode diretamente pela sua IDE (ex: IntelliJ IDEA).
+
+### 3️⃣ Testar pelo Swagger
+
+Acesse **http://localhost:8080/swagger-ui.html**.
+
+1. Crie uma conta em `POST /api/auth/cadastro`
+2. Faça login em `POST /api/auth/login` e copie o `tokenAcesso`
+3. Clique em **Authorize**, cole o token e teste as rotas protegidas
 
 ---
 

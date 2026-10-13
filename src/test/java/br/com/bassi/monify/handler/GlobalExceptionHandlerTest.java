@@ -45,7 +45,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Nested
-    class handleMethodArgumentNotValidException {
+    class handleBindException {
 
         @Test
         @DisplayName("Deve retornar 400 com os campos inválidos quando a validação falhar")

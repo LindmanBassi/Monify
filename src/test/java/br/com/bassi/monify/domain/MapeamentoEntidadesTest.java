@@ -81,8 +81,8 @@ class MapeamentoEntidadesTest {
         void devePersistirERecarregarComCategoria() {
 
             //Arrange
-            var transacao = em.persist(new Transacao(usuario.getId(), mercado, TipoTransacao.DESPESA,
-                    new BigDecimal("52.90"), "Feira", LocalDate.of(2026, 10, 9)));
+            var transacao = em.persist(new Transacao(usuario.getId(), mercado,
+                    new BigDecimal("52.90"), "Feira", LocalDate.of(2026, 10, 9), LocalDate.of(2026, 10, 9)));
 
             //Act
             sincronizar();
