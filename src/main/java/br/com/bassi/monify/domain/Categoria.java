@@ -52,6 +52,10 @@ public class Categoria extends EntidadeBase {
         this.arquivada = true;
     }
 
+    public void desarquivar() {
+        this.arquivada = false;
+    }
+
     public boolean isDespesa() {
         return tipo == TipoTransacao.DESPESA;
     }
