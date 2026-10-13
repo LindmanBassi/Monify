@@ -37,11 +37,10 @@ public class Orcamento extends EntidadeBase {
     @Column(name = "valor_limite", nullable = false, precision = 19, scale = 2)
     private BigDecimal valorLimite;
 
-    public Orcamento(UUID usuarioId, Categoria categoria, YearMonth mesReferencia, BigDecimal valorLimite) {
+    public Orcamento(UUID usuarioId, Categoria categoria, YearMonth mesReferencia, BigDecimal valorLimite,
+                     YearMonth mesAtual) {
 
-        if (!categoria.pertenceA(usuarioId)) {
-            throw new RegraNegocioException("Categoria não pertence ao usuário");
-        }
+        categoria.validarAtivaDoUsuario(usuarioId);
         if (!categoria.isDespesa()) {
             throw new RegraNegocioException("Orçamento só pode ser definido para categorias de despesa");
         }
@@ -49,12 +48,21 @@ public class Orcamento extends EntidadeBase {
         this.usuarioId = usuarioId;
         this.categoria = categoria;
         this.mesReferencia = mesReferencia;
+        validarMesNaoPassado(mesAtual);
         this.valorLimite = Dinheiro.validarPositivo(valorLimite, "Valor limite");
     }
 
     // permitido mesmo se uma meta de economia usa este orçamento: o valor só é lido no congelamento
-    public void alterarLimite(BigDecimal valorLimite) {
+    public void alterarLimite(BigDecimal valorLimite, YearMonth mesAtual) {
+        validarMesNaoPassado(mesAtual);
         this.valorLimite = Dinheiro.validarPositivo(valorLimite, "Valor limite");
+    }
+
+    // orçamentos de meses passados ficam como histórico: não são criados, alterados nem excluídos
+    public void validarMesNaoPassado(YearMonth mesAtual) {
+        if (mesReferencia.isBefore(mesAtual)) {
+            throw new RegraNegocioException("Orçamento de mês passado não pode ser alterado");
+        }
     }
 
     public StatusOrcamento calcularStatus(BigDecimal gasto) {
@@ -70,7 +78,12 @@ public class Orcamento extends EntidadeBase {
         return StatusOrcamento.ESTOURADO;
     }
 
+    // negativo quando estourado: indica quanto passou do limite
     public BigDecimal calcularRestante(BigDecimal gasto) {
         return valorLimite.subtract(gasto);
+    }
+
+    public BigDecimal calcularPercentual(BigDecimal gasto) {
+        return Dinheiro.calcularPercentual(gasto, valorLimite);
     }
 }
