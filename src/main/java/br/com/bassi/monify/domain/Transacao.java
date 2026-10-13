@@ -50,31 +50,37 @@ public class Transacao extends EntidadeBase {
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
 
-    public Transacao(UUID usuarioId, Categoria categoria, TipoTransacao tipo, BigDecimal valor,
-                     String descricao, LocalDate dataOcorrencia) {
+    public Transacao(UUID usuarioId, Categoria categoria, BigDecimal valor, String descricao,
+                     LocalDate dataOcorrencia, LocalDate hoje) {
         this.usuarioId = usuarioId;
-        aplicarDados(categoria, tipo, valor, descricao, dataOcorrencia);
+        definirCategoria(categoria);
+        aplicarDados(valor, descricao, dataOcorrencia, hoje);
     }
 
-    // edição aplica as mesmas validações da criação
-    public void atualizar(Categoria categoria, TipoTransacao tipo, BigDecimal valor,
-                          String descricao, LocalDate dataOcorrencia) {
-        aplicarDados(categoria, tipo, valor, descricao, dataOcorrencia);
+    // edição aplica as mesmas validações da criação; mantida a categoria, ela pode estar arquivada
+    public void atualizar(Categoria categoria, BigDecimal valor, String descricao,
+                          LocalDate dataOcorrencia, LocalDate hoje) {
+        if (!categoria.equals(this.categoria)) {
+            definirCategoria(categoria);
+        }
+        aplicarDados(valor, descricao, dataOcorrencia, hoje);
     }
 
-    private void aplicarDados(Categoria categoria, TipoTransacao tipo, BigDecimal valor,
-                              String descricao, LocalDate dataOcorrencia) {
-
+    // tipo da transação é sempre o tipo da categoria
+    private void definirCategoria(Categoria categoria) {
         categoria.validarAtivaDoUsuario(usuarioId);
+        this.categoria = categoria;
+        this.tipo = categoria.getTipo();
+    }
 
-        if (categoria.getTipo() != tipo) {
-            throw new RegraNegocioException("Tipo da transação difere do tipo da categoria");
+    private void aplicarDados(BigDecimal valor, String descricao, LocalDate dataOcorrencia, LocalDate hoje) {
+
+        if (dataOcorrencia.isAfter(hoje)) {
+            throw new RegraNegocioException("Data da transação não pode ser futura");
         }
 
-        this.categoria = categoria;
-        this.tipo = tipo;
         this.valor = Dinheiro.validarPositivo(valor, "Valor");
-        this.descricao = descricao;
+        this.descricao = descricao == null || descricao.isBlank() ? null : descricao.trim();
         this.dataOcorrencia = dataOcorrencia;
     }
 }
