@@ -104,7 +104,7 @@ class MapeamentoEntidadesTest {
         void deveConverterMesReferencia() {
 
             //Arrange
-            var orcamento = em.persist(new Orcamento(usuario.getId(), mercado, OUTUBRO, new BigDecimal("1000")));
+            var orcamento = em.persist(new Orcamento(usuario.getId(), mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO));
 
             //Act
             sincronizar();
@@ -119,8 +119,8 @@ class MapeamentoEntidadesTest {
         void deveLancarExcecaoQuandoOrcamentoDuplicado() {
 
             //Arrange
-            em.persist(new Orcamento(usuario.getId(), mercado, OUTUBRO, new BigDecimal("1000")));
-            em.persist(new Orcamento(usuario.getId(), mercado, OUTUBRO, new BigDecimal("2000")));
+            em.persist(new Orcamento(usuario.getId(), mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO));
+            em.persist(new Orcamento(usuario.getId(), mercado, OUTUBRO, new BigDecimal("2000"), OUTUBRO));
 
             //Act & Assert
             assertThrows(PersistenceException.class, () -> em.flush());

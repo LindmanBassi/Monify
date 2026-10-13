@@ -22,7 +22,8 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Autenticação (cadastro, login, JWT e refresh token com rotação)
 - [x] Categorias (CRUD, arquivar e desarquivar, isolamento por usuário)
 - [x] Transações (CRUD, histórico com filtros combináveis e paginação)
-- [ ] Orçamentos, metas de economia, metas de poupança e dashboard
+- [x] Orçamentos mensais (gasto, restante, percentual e status calculados no banco)
+- [ ] Metas de economia, metas de poupança e dashboard
 - [ ] Frontend em React
 - [ ] Deploy na AWS
 
@@ -120,6 +121,25 @@ Todas as rotas exigem token e enxergam apenas as categorias do próprio usuário
 | DELETE | `/api/transacoes/{id}`     | Exclui a transação                                                          |
 
 Filtros combináveis do histórico: `inicio`, `fim`, `categoriaId`, `tipo` e `texto` (busca na descrição). Paginação com `page` e `size` (máximo de 100 por página), com resposta em `conteudo`, `pagina`, `tamanho`, `totalElementos` e `totalPaginas`.
+
+---
+
+## 📊 Orçamentos
+
+- Limite mensal por categoria de **despesa**, um por categoria e mês
+- Definido para o mês atual ou futuros; meses passados ficam como histórico
+- O **gasto** do mês é somado no banco em uma única consulta agregada (`SUM ... GROUP BY`)
+- Cada orçamento traz **limite, gasto, restante, percentual e status**:
+  - `DENTRO_DO_LIMITE` até 80% · `PROXIMO_DO_LIMITE` até 100% · `ESTOURADO` acima de 100%
+  - Restante negativo indica quanto passou do limite
+
+| Método | Rota                          | Descrição                                                                  |
+|--------|-------------------------------|----------------------------------------------------------------------------|
+| GET    | `/api/orcamentos?mes=2026-10` | Orçamentos do mês (padrão: mês atual)                                      |
+| GET    | `/api/orcamentos/{id}`        | Detalhe do orçamento                                                       |
+| POST   | `/api/orcamentos`             | Define o orçamento: **201** ao criar, **200** ao atualizar o já existente  |
+| PUT    | `/api/orcamentos/{id}`        | Altera o limite                                                            |
+| DELETE | `/api/orcamentos/{id}`        | Exclui o orçamento                                                         |
 
 ---
 
@@ -225,9 +245,11 @@ classDiagram
         -UUID usuarioId
         -YearMonth mesReferencia
         -BigDecimal valorLimite
-        +alterarLimite(valorLimite) void
+        +alterarLimite(valorLimite, mesAtual) void
+        +validarMesNaoPassado(mesAtual) void
         +calcularStatus(gasto) StatusOrcamento
         +calcularRestante(gasto) BigDecimal
+        +calcularPercentual(gasto) BigDecimal
     }
 
     class MetaEconomia {

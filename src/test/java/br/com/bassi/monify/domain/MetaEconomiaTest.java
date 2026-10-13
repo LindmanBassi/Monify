@@ -105,7 +105,7 @@ class MetaEconomiaTest {
         void deveLancarExcecaoQuandoOrcamentoDeOutroMes() {
 
             //Arrange
-            var orcamentoNovembro = new Orcamento(usuarioId, mercado, NOVEMBRO, new BigDecimal("1000"));
+            var orcamentoNovembro = new Orcamento(usuarioId, mercado, NOVEMBRO, new BigDecimal("1000"), OUTUBRO);
 
             //Act & Assert
             assertThrows(RegraNegocioException.class, () -> new MetaEconomia(usuarioId, mercado, OUTUBRO,
@@ -117,7 +117,7 @@ class MetaEconomiaTest {
         void deveVincularOrcamentoQuandoReferenciaOrcamento() {
 
             //Arrange
-            var orcamentoOutubro = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"));
+            var orcamentoOutubro = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO);
 
             //Act
             var meta = new MetaEconomia(usuarioId, mercado, OUTUBRO,
@@ -132,7 +132,7 @@ class MetaEconomiaTest {
         void deveLancarExcecaoQuandoOrcamentoParaOutraReferencia() {
 
             //Arrange
-            var orcamento = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"));
+            var orcamento = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO);
 
             //Act & Assert
             assertThrows(RegraNegocioException.class, () -> new MetaEconomia(usuarioId, mercado, OUTUBRO,
