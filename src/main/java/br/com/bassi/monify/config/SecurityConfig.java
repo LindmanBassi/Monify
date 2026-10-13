@@ -39,6 +39,12 @@ public class SecurityConfig {
             "/api/auth/logout"
     };
 
+    private static final String[] ROTAS_DOCUMENTACAO = {
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs/**"
+    };
+
     private final PropriedadesAutenticacao propriedades;
 
     @Bean
@@ -50,6 +56,7 @@ public class SecurityConfig {
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rotas -> rotas
                         .requestMatchers(HttpMethod.POST, ROTAS_PUBLICAS).permitAll()
+                        .requestMatchers(HttpMethod.GET, ROTAS_DOCUMENTACAO).permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer

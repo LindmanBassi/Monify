@@ -18,7 +18,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Tratamento global de erros com `ProblemDetail`
 - [x] Ambiente local com Docker Compose
 - [x] CI com GitHub Actions (build e testes a cada push e pull request)
-- [ ] Documentação da API com Swagger / OpenAPI
+- [x] Documentação da API com Swagger / OpenAPI
 - [x] Autenticação (cadastro, login, JWT e refresh token com rotação)
 - [ ] Categorias e transações (CRUD, filtros e paginação)
 - [ ] Orçamentos, metas de economia, metas de poupança e dashboard
@@ -381,6 +381,7 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 - Spring Data JPA / Hibernate 7
 - Spring Security + OAuth2 Resource Server (JWT com `NimbusJwtEncoder` / `NimbusJwtDecoder`)
 - Bean Validation
+- Swagger / OpenAPI (springdoc)
 - MySQL 8.4
 - Flyway
 - Docker & Docker Compose
@@ -390,7 +391,6 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 - GitHub Actions
 
 Planejadas nas próximas etapas:
-- Swagger / OpenAPI (springdoc)
 - React, TypeScript, Tailwind CSS e Recharts
 - AWS
 
@@ -433,6 +433,14 @@ Com o JDK 21 configurado:
 ```
 
 Ou rode diretamente pela sua IDE (ex: IntelliJ IDEA).
+
+### 3️⃣ Testar pelo Swagger
+
+Acesse **http://localhost:8080/swagger-ui.html**.
+
+1. Crie uma conta em `POST /api/auth/cadastro`
+2. Faça login em `POST /api/auth/login` e copie o `tokenAcesso`
+3. Clique em **Authorize**, cole o token e teste as rotas protegidas
 
 ---
 
