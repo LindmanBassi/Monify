@@ -2,7 +2,6 @@ package br.com.bassi.monify.controller;
 
 import br.com.bassi.monify.TestcontainersConfiguration;
 import br.com.bassi.monify.service.TokenService;
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -12,7 +11,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -30,7 +28,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -50,23 +47,6 @@ class UsuarioControllerTest {
     @BeforeEach
     void setUp() {
         BancoDeTeste.limpar(jdbcTemplate);
-    }
-
-    private String cadastrarELogar(String email) throws Exception {
-        mockMvc.perform(post("/api/auth/cadastro")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"nome": "Henrique", "email": "%s", "senha": "senha-forte"}
-                        """.formatted(email)));
-
-        var resposta = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"email": "%s", "senha": "senha-forte"}
-                                """.formatted(email)))
-                .andReturn().getResponse().getContentAsString();
-
-        return JsonPath.read(resposta, "$.tokenAcesso");
     }
 
     private ResultActions buscarAutenticado(String tokenAcesso) throws Exception {
@@ -91,7 +71,7 @@ class UsuarioControllerTest {
         void deveRetornarUsuarioDoToken() throws Exception {
 
             //Arrange
-            var tokenAcesso = cadastrarELogar("henrique@email.com");
+            var tokenAcesso = ApiDeTeste.cadastrarELogar(mockMvc, "henrique@email.com");
 
             //Act & Assert
             buscarAutenticado(tokenAcesso)
@@ -104,8 +84,8 @@ class UsuarioControllerTest {
         void deveIsolarUsuariosPeloToken() throws Exception {
 
             //Arrange
-            var tokenAna = cadastrarELogar("ana@email.com");
-            var tokenBruno = cadastrarELogar("bruno@email.com");
+            var tokenAna = ApiDeTeste.cadastrarELogar(mockMvc, "ana@email.com");
+            var tokenBruno = ApiDeTeste.cadastrarELogar(mockMvc, "bruno@email.com");
 
             //Act & Assert
             buscarAutenticado(tokenAna).andExpect(jsonPath("$.email").value("ana@email.com"));

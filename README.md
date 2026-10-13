@@ -20,7 +20,8 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] CI com GitHub Actions (build e testes a cada push e pull request)
 - [x] Documentação da API com Swagger / OpenAPI
 - [x] Autenticação (cadastro, login, JWT e refresh token com rotação)
-- [ ] Categorias e transações (CRUD, filtros e paginação)
+- [x] Categorias (CRUD, arquivar e desarquivar, isolamento por usuário)
+- [ ] Transações (CRUD, filtros e paginação)
 - [ ] Orçamentos, metas de economia, metas de poupança e dashboard
 - [ ] Frontend em React
 - [ ] Deploy na AWS
@@ -37,7 +38,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - 🗂️ Categorias
   - Categorias padrão copiadas no cadastro do usuário
   - Tipo fixo (`RECEITA` ou `DESPESA`)
-  - Remover = arquivar (o histórico permanece intacto)
+  - Remover = arquivar (o histórico permanece intacto), com opção de desarquivar
 - 💸 Transações
   - Registro de receitas e despesas
   - Histórico com filtros por período, categoria, tipo e descrição, paginado
@@ -85,6 +86,21 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 | POST   | `/api/auth/renovar`   | —            | Troca o refresh token por um novo par       |
 | POST   | `/api/auth/logout`    | —            | Revoga o refresh token                      |
 | GET    | `/api/usuarios/me`    | Bearer       | Dados do usuário autenticado                |
+
+---
+
+## 🗂️ Categorias
+
+Todas as rotas exigem token e enxergam apenas as categorias do próprio usuário. Categoria de outro usuário responde **404**.
+
+| Método | Rota                                   | Descrição                                                        |
+|--------|----------------------------------------|------------------------------------------------------------------|
+| GET    | `/api/categorias`                      | Lista as ativas; filtros `tipo` e `incluirArquivadas`            |
+| GET    | `/api/categorias/{id}`                 | Detalhe da categoria                                             |
+| POST   | `/api/categorias`                      | Cria; **409** se já existir o mesmo nome no mesmo tipo           |
+| PUT    | `/api/categorias/{id}`                 | Edita nome e cor (o tipo é fixo)                                 |
+| DELETE | `/api/categorias/{id}`                 | Arquiva (remover = arquivar)                                     |
+| PATCH  | `/api/categorias/{id}/desarquivar`     | Volta a categoria para uso                                       |
 
 ---
 
@@ -167,6 +183,7 @@ classDiagram
         -boolean arquivada
         +editar(nome, cor) void
         +arquivar() void
+        +desarquivar() void
         +isDespesa() boolean
         +pertenceA(usuarioId) boolean
         +validarAtivaDoUsuario(usuarioId) void
