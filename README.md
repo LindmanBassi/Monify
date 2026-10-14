@@ -24,7 +24,8 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Transações (CRUD, histórico com filtros combináveis e paginação)
 - [x] Orçamentos mensais (gasto, restante, percentual e status calculados no banco)
 - [x] Metas de economia (referência congelada no início do mês e cancelamento automático)
-- [ ] Metas de poupança e dashboard
+- [x] Metas de poupança (aportes, resgates e quanto guardar por mês)
+- [ ] Dashboard
 - [ ] Frontend em React
 - [ ] Deploy na AWS
 
@@ -170,6 +171,29 @@ Regras principais:
 
 ---
 
+## 🐷 Metas de poupança
+
+Juntar dinheiro para um objetivo (ex.: uma viagem), independente de categoria:
+
+- Valor alvo e prazo opcional (não pode estar no passado)
+- **Aportes** (valores positivos) e **resgates** (negativos); o acumulado nunca fica negativo
+- Ao atingir o alvo, a meta é **concluída**: a conquista é permanente, aceita apenas resgates e não volta a ficar ativa
+- **Cancelar** preserva o acumulado como histórico; meta cancelada não aceita novos lançamentos
+- Aportes são **imutáveis**, como um extrato: correções são feitas com um lançamento contrário
+- Acompanhamento: acumulado, percentual, quanto falta e, com prazo, **quanto guardar por mês** (do mês atual até o mês do prazo, arredondado para cima)
+
+| Método | Rota                                   | Descrição                                               |
+|--------|----------------------------------------|---------------------------------------------------------|
+| GET    | `/api/metas-poupanca?status=ATIVA`     | Metas do usuário, com filtro opcional por status        |
+| GET    | `/api/metas-poupanca/{id}`             | Detalhe com acumulado, percentual e valor por mês       |
+| POST   | `/api/metas-poupanca`                  | Cria a meta                                             |
+| PUT    | `/api/metas-poupanca/{id}`             | Edita nome, alvo e prazo (somente meta ativa)           |
+| PATCH  | `/api/metas-poupanca/{id}/cancelar`    | Cancela a meta ativa                                    |
+| POST   | `/api/metas-poupanca/{id}/aportes`     | Registra aporte ou resgate                              |
+| GET    | `/api/metas-poupanca/{id}/aportes`     | Extrato paginado, do mais recente para o mais antigo    |
+
+---
+
 ## 🧩 Diagramas
 
 ### Casos de Uso
@@ -308,9 +332,14 @@ classDiagram
         -LocalDate prazo
         -StatusMetaPoupanca status
         -Instant criadoEm
-        +registrarAporte(valor, data, observacao) Aporte
+        +editar(nome, valorAlvo, prazo, hoje) void
+        +registrarAporte(valor, data, observacao, hoje) Aporte
+        +cancelar() void
         +calcularAcumulado() BigDecimal
-        +calcularFaltante() BigDecimal
+        +calcularFaltante(acumulado) BigDecimal
+        +calcularPercentual(acumulado) BigDecimal
+        +calcularValorPorMes(acumulado, hoje) BigDecimal
+        +isPrazoVencido(hoje) boolean
     }
 
     class Aporte {
