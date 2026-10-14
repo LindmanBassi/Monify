@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { ErroApi } from '../api/cliente'
 import { useAutenticacao } from '../autenticacao/ContextoAutenticacao'
-import { IconeAlerta, IconeConfirmar, Logo } from '../componentes/Icones'
+import { IconeConfirmar, Logo } from '../componentes/Icones'
+import { Alerta, Campo } from '../componentes/ui'
+import { classeCampo } from '../componentes/estilos'
 
 // mesmas regras do CadastroRequest da API
 const esquemaEntrar = z.object({
@@ -132,11 +134,11 @@ export function Entrar() {
           <form noValidate onSubmit={handleSubmit(enviar)} className="flex flex-col gap-4">
             {modo === 'criar' && (
               <Campo rotulo="Nome" erro={errors.nome?.message}>
-                <input type="text" autoComplete="name" placeholder="Seu nome" {...register('nome')} className={estiloCampo(!!errors.nome)} />
+                <input type="text" autoComplete="name" placeholder="Seu nome" {...register('nome')} className={classeCampo(!!errors.nome)} />
               </Campo>
             )}
             <Campo rotulo="E-mail" erro={errors.email?.message}>
-              <input type="email" autoComplete="email" placeholder="voce@email.com" {...register('email')} className={estiloCampo(!!errors.email)} />
+              <input type="email" autoComplete="email" placeholder="voce@email.com" {...register('email')} className={classeCampo(!!errors.email)} />
             </Campo>
             <Campo rotulo="Senha" erro={errors.senha?.message}>
               <input
@@ -144,15 +146,12 @@ export function Entrar() {
                 autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'}
                 placeholder={modo === 'entrar' ? 'Sua senha' : 'Mínimo de 8 caracteres'}
                 {...register('senha')}
-                className={estiloCampo(!!errors.senha)}
+                className={classeCampo(!!errors.senha)}
               />
             </Campo>
 
             {erroGeral && (
-              <div role="alert" className="flex items-start gap-2.5 rounded-[10px] bg-erro-fundo px-3 py-2.5 text-[13px] leading-snug text-erro-texto">
-                <span className="mt-px shrink-0"><IconeAlerta tamanho={16} /></span>
-                <span>{erroGeral}</span>
-              </div>
+              <Alerta>{erroGeral}</Alerta>
             )}
 
             <button
@@ -166,21 +165,5 @@ export function Entrar() {
         </div>
       </section>
     </div>
-  )
-}
-
-function estiloCampo(comErro: boolean) {
-  return `h-[46px] rounded-[10px] border px-3.5 text-[15px] font-medium outline-none focus:border-destaque focus:ring-2 focus:ring-destaque/20 ${
-    comErro ? 'border-erro-texto' : 'border-borda-campo'
-  }`
-}
-
-function Campo({ rotulo, erro, children }: { rotulo: string; erro?: string; children: ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
-      {rotulo}
-      {children}
-      {erro && <span className="text-[13px] font-semibold text-erro-texto">{erro}</span>}
-    </label>
   )
 }

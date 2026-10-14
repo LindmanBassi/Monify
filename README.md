@@ -26,7 +26,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Metas de economia (referência congelada no início do mês e cancelamento automático)
 - [x] Metas de poupança (aportes, resgates e quanto guardar por mês)
 - [x] Dashboard (resumo do mês, comparação, totais por categoria e evolução de 6 meses)
-- [ ] Frontend em React — base pronta: login, cadastro, sessão e menu (telas em construção)
+- [ ] Frontend em React — prontos: login, cadastro, sessão, menu, categorias e transações (dashboard, orçamentos e metas em construção)
 - [ ] Deploy na AWS
 
 ---
