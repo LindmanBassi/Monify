@@ -105,7 +105,7 @@ class MetaEconomiaTest {
         void deveLancarExcecaoQuandoOrcamentoDeOutroMes() {
 
             //Arrange
-            var orcamentoNovembro = new Orcamento(usuarioId, mercado, NOVEMBRO, new BigDecimal("1000"));
+            var orcamentoNovembro = new Orcamento(usuarioId, mercado, NOVEMBRO, new BigDecimal("1000"), OUTUBRO);
 
             //Act & Assert
             assertThrows(RegraNegocioException.class, () -> new MetaEconomia(usuarioId, mercado, OUTUBRO,
@@ -117,7 +117,7 @@ class MetaEconomiaTest {
         void deveVincularOrcamentoQuandoReferenciaOrcamento() {
 
             //Arrange
-            var orcamentoOutubro = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"));
+            var orcamentoOutubro = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO);
 
             //Act
             var meta = new MetaEconomia(usuarioId, mercado, OUTUBRO,
@@ -132,7 +132,7 @@ class MetaEconomiaTest {
         void deveLancarExcecaoQuandoOrcamentoParaOutraReferencia() {
 
             //Arrange
-            var orcamento = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"));
+            var orcamento = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO);
 
             //Act & Assert
             assertThrows(RegraNegocioException.class, () -> new MetaEconomia(usuarioId, mercado, OUTUBRO,
@@ -191,6 +191,78 @@ class MetaEconomiaTest {
             //Act & Assert
             assertThrows(RegraNegocioException.class, () -> meta.congelar(new BigDecimal("500"), AGORA));
             assertFalse(meta.isCongelada());
+        }
+    }
+
+    @Nested
+    class congelarNoInicioDoMes {
+
+        @Test
+        @DisplayName("Deve congelar quando a referência permitir a economia")
+        void deveCongelarQuandoReferenciaValida() {
+
+            //Arrange
+            var meta = metaMesAnterior(OUTUBRO, "200");
+
+            //Act
+            meta.congelarNoInicioDoMes(new BigDecimal("1000"), AGORA);
+
+            //Assert
+            assertTrue(meta.isCongelada());
+            assertFalse(meta.isCancelada());
+            assertEquals(new BigDecimal("800.00"), meta.getValorLimite());
+        }
+
+        @Test
+        @DisplayName("Deve cancelar quando a economia for maior ou igual à referência")
+        void deveCancelarQuandoEconomiaMaiorOuIgualReferencia() {
+
+            //Arrange
+            var meta = metaMesAnterior(OUTUBRO, "500");
+
+            //Act
+            meta.congelarNoInicioDoMes(new BigDecimal("500"), AGORA);
+
+            //Assert
+            assertTrue(meta.isCancelada());
+            assertFalse(meta.isCongelada());
+            assertEquals(StatusMetaEconomia.CANCELADA, meta.calcularStatus(BigDecimal.ZERO, OUTUBRO));
+        }
+
+        @Test
+        @DisplayName("Deve cancelar quando a referência não puder ser calculada")
+        void deveCancelarQuandoReferenciaIndisponivel() {
+
+            //Arrange
+            var meta = metaMesAnterior(OUTUBRO, "100");
+
+            //Act
+            meta.congelarNoInicioDoMes(null, AGORA);
+
+            //Assert
+            assertEquals(AGORA, meta.getCanceladaEm());
+        }
+    }
+
+    @Nested
+    class desvincularOrcamento {
+
+        @Test
+        @DisplayName("Deve remover o vínculo com o orçamento mantendo os valores congelados")
+        void deveRemoverVinculoMantendoValores() {
+
+            //Arrange
+            var orcamento = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO);
+            var meta = new MetaEconomia(usuarioId, mercado, OUTUBRO, TipoReferencia.ORCAMENTO, orcamento,
+                    new BigDecimal("200"), OUTUBRO);
+            meta.congelar(orcamento.getValorLimite(), AGORA);
+
+            //Act
+            meta.desvincularOrcamento();
+
+            //Assert
+            assertNull(meta.getOrcamento());
+            assertEquals(new BigDecimal("800.00"), meta.getValorLimite());
         }
     }
 

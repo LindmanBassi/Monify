@@ -100,17 +100,34 @@ public class MetaEconomia extends EntidadeBase {
             throw new RegraNegocioException("Meta de economia já está congelada");
         }
 
-        var referencia = Dinheiro.normalizar(valorReferencia, "Valor de referência");
-        var limite = referencia.subtract(valorEconomia);
-
-        // PENDENTE (CLAUDE.md §11): tratamento definitivo para limite <= 0. Por ora, rejeita.
-        if (limite.signum() <= 0) {
+        if (!permiteEconomia(valorReferencia)) {
             throw new RegraNegocioException("Valor de economia deve ser menor que o valor de referência");
         }
 
-        this.valorReferencia = referencia;
-        this.valorLimite = limite;
+        this.valorReferencia = Dinheiro.normalizar(valorReferencia, "Valor de referência");
+        this.valorLimite = this.valorReferencia.subtract(valorEconomia);
         this.congeladaEm = agora;
+    }
+
+    // congelamento automático quando o mês começa: sem referência válida a meta não pode ser cumprida e é cancelada
+    public void congelarNoInicioDoMes(BigDecimal valorReferencia, Instant agora) {
+
+        if (valorReferencia == null || !permiteEconomia(valorReferencia)) {
+            this.canceladaEm = agora;
+            return;
+        }
+
+        congelar(valorReferencia, agora);
+    }
+
+    // a referência só permite a meta quando sobra um limite positivo para gastar
+    public boolean permiteEconomia(BigDecimal valorReferencia) {
+        return Dinheiro.normalizar(valorReferencia, "Valor de referência").subtract(valorEconomia).signum() > 0;
+    }
+
+    // orçamento excluído: a meta mantém os valores já congelados
+    public void desvincularOrcamento() {
+        this.orcamento = null;
     }
 
     // cancelamento manual ou automático: só é permitido enquanto a meta estiver pendente

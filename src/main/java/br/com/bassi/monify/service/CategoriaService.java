@@ -21,6 +21,7 @@ import java.util.UUID;
 public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
+    private final MetaEconomiaService metaEconomiaService;
 
     // arquivadas ficam fora da listagem, salvo quando pedidas
     @Transactional(readOnly = true)
@@ -64,11 +65,12 @@ public class CategoriaService {
         categoria.editar(nome, request.cor());
     }
 
-    // remover = arquivar: o histórico permanece intacto
+    // remover = arquivar: o histórico permanece intacto e as metas de economia pendentes são canceladas
     @Transactional
     public void arquivar(UUID usuarioId, UUID id) {
 
         buscarDoUsuario(usuarioId, id).arquivar();
+        metaEconomiaService.cancelarPendentesDaCategoria(usuarioId, id);
     }
 
     @Transactional

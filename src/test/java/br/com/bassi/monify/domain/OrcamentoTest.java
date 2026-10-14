@@ -13,22 +13,46 @@ import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class OrcamentoTest {
 
+    private static final YearMonth SETEMBRO = YearMonth.of(2026, 9);
     private static final YearMonth OUTUBRO = YearMonth.of(2026, 10);
+    private static final YearMonth NOVEMBRO = YearMonth.of(2026, 11);
 
     private final UUID usuarioId = UUID.randomUUID();
     private final Categoria mercado = new Categoria(usuarioId, "Mercado", TipoTransacao.DESPESA, "#FF0000");
 
     private Orcamento orcamentoDeMil() {
-        return new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"));
+        return new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO);
     }
 
     @Nested
     class criar {
+
+        @Test
+        @DisplayName("Deve criar orçamento para o mês atual ou futuro")
+        void deveCriarParaMesAtualOuFuturo() {
+
+            //Act
+            var atual = orcamentoDeMil();
+            var futuro = new Orcamento(usuarioId, mercado, NOVEMBRO, new BigDecimal("500"), OUTUBRO);
+
+            //Assert
+            assertEquals(new BigDecimal("1000.00"), atual.getValorLimite());
+            assertEquals(NOVEMBRO, futuro.getMesReferencia());
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando o mês for passado")
+        void deveLancarExcecaoQuandoMesPassado() {
+
+            //Act & Assert
+            var excecao = assertThrows(RegraNegocioException.class,
+                    () -> new Orcamento(usuarioId, mercado, SETEMBRO, BigDecimal.TEN, OUTUBRO));
+            assertEquals("Orçamento de mês passado não pode ser alterado", excecao.getMessage());
+        }
 
         @Test
         @DisplayName("Deve lançar exceção quando a categoria for de receita")
@@ -39,7 +63,19 @@ class OrcamentoTest {
 
             //Act & Assert
             assertThrows(RegraNegocioException.class,
-                    () -> new Orcamento(usuarioId, salario, OUTUBRO, BigDecimal.TEN));
+                    () -> new Orcamento(usuarioId, salario, OUTUBRO, BigDecimal.TEN, OUTUBRO));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando a categoria estiver arquivada")
+        void deveLancarExcecaoQuandoCategoriaArquivada() {
+
+            //Arrange
+            mercado.arquivar();
+
+            //Act & Assert
+            assertThrows(RegraNegocioException.class,
+                    () -> new Orcamento(usuarioId, mercado, OUTUBRO, BigDecimal.TEN, OUTUBRO));
         }
 
         @Test
@@ -48,7 +84,7 @@ class OrcamentoTest {
 
             //Act & Assert
             assertThrows(RegraNegocioException.class,
-                    () -> new Orcamento(UUID.randomUUID(), mercado, OUTUBRO, BigDecimal.TEN));
+                    () -> new Orcamento(UUID.randomUUID(), mercado, OUTUBRO, BigDecimal.TEN, OUTUBRO));
         }
 
         @Test
@@ -57,7 +93,7 @@ class OrcamentoTest {
 
             //Act & Assert
             assertThrows(RegraNegocioException.class,
-                    () -> new Orcamento(usuarioId, mercado, OUTUBRO, BigDecimal.ZERO));
+                    () -> new Orcamento(usuarioId, mercado, OUTUBRO, BigDecimal.ZERO, OUTUBRO));
         }
     }
 
@@ -102,6 +138,28 @@ class OrcamentoTest {
     }
 
     @Nested
+    class calcularPercentual {
+
+        @ParameterizedTest(name = "gasto {0} de 300 -> {1}%")
+        @DisplayName("Deve calcular o percentual gasto com duas casas e arredondamento HALF_EVEN")
+        @CsvSource({
+                "0,      0.00",
+                "150,    50.00",
+                "100,    33.33",
+                "200,    66.67",
+                "450,    150.00"
+        })
+        void deveCalcularPercentualComDuasCasas(BigDecimal gasto, BigDecimal esperado) {
+
+            //Arrange
+            var orcamento = new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("300"), OUTUBRO);
+
+            //Act & Assert
+            assertEquals(esperado, orcamento.calcularPercentual(gasto));
+        }
+    }
+
+    @Nested
     class alterarLimite {
 
         @Test
@@ -112,10 +170,22 @@ class OrcamentoTest {
             var orcamento = orcamentoDeMil();
 
             //Act
-            orcamento.alterarLimite(new BigDecimal("1500"));
+            orcamento.alterarLimite(new BigDecimal("1500"), OUTUBRO);
 
             //Assert
             assertEquals(new BigDecimal("1500.00"), orcamento.getValorLimite());
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando o orçamento for de mês passado")
+        void deveLancarExcecaoQuandoMesPassado() {
+
+            //Arrange
+            var orcamento = orcamentoDeMil();
+
+            //Act & Assert
+            assertThrows(RegraNegocioException.class, () -> orcamento.alterarLimite(BigDecimal.TEN, NOVEMBRO));
+            assertEquals(new BigDecimal("1000.00"), orcamento.getValorLimite());
         }
     }
 }

@@ -32,6 +32,6 @@ public class Aporte extends EntidadeBase {
         this.metaPoupanca = metaPoupanca;
         this.valor = valor;
         this.data = data;
-        this.observacao = observacao;
+        this.observacao = observacao == null || observacao.isBlank() ? null : observacao.trim();
     }
 }

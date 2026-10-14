@@ -22,7 +22,10 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Autenticação (cadastro, login, JWT e refresh token com rotação)
 - [x] Categorias (CRUD, arquivar e desarquivar, isolamento por usuário)
 - [x] Transações (CRUD, histórico com filtros combináveis e paginação)
-- [ ] Orçamentos, metas de economia, metas de poupança e dashboard
+- [x] Orçamentos mensais (gasto, restante, percentual e status calculados no banco)
+- [x] Metas de economia (referência congelada no início do mês e cancelamento automático)
+- [x] Metas de poupança (aportes, resgates e quanto guardar por mês)
+- [x] Dashboard (resumo do mês, comparação, totais por categoria e evolução de 6 meses)
 - [ ] Frontend em React
 - [ ] Deploy na AWS
 
@@ -54,8 +57,8 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
   - Aportes e resgates, sem permitir acumulado negativo
   - Conclusão automática ao atingir o alvo
 - 📈 Dashboard
-  - Receitas, despesas e saldo do período
-  - Gastos por categoria e evolução mensal
+  - Receitas, despesas e saldo do mês, com variação em relação ao mês anterior
+  - Gastos e receitas por categoria e evolução dos últimos 6 meses
   - Tudo calculado com queries agregadas no banco
 
 ---
@@ -123,6 +126,104 @@ Filtros combináveis do histórico: `inicio`, `fim`, `categoriaId`, `tipo` e `te
 
 ---
 
+## 📊 Orçamentos
+
+- Limite mensal por categoria de **despesa**, um por categoria e mês
+- Definido para o mês atual ou futuros; meses passados ficam como histórico
+- O **gasto** do mês é somado no banco em uma única consulta agregada (`SUM ... GROUP BY`)
+- Cada orçamento traz **limite, gasto, restante, percentual e status**:
+  - `DENTRO_DO_LIMITE` até 80% · `PROXIMO_DO_LIMITE` até 100% · `ESTOURADO` acima de 100%
+  - Restante negativo indica quanto passou do limite
+
+| Método | Rota                          | Descrição                                                                  |
+|--------|-------------------------------|----------------------------------------------------------------------------|
+| GET    | `/api/orcamentos?mes=2026-10` | Orçamentos do mês (padrão: mês atual)                                      |
+| GET    | `/api/orcamentos/{id}`        | Detalhe do orçamento                                                       |
+| POST   | `/api/orcamentos`             | Define o orçamento: **201** ao criar, **200** ao atualizar o já existente  |
+| PUT    | `/api/orcamentos/{id}`        | Altera o limite                                                            |
+| DELETE | `/api/orcamentos/{id}`        | Exclui o orçamento                                                         |
+
+---
+
+## 🎯 Metas de economia
+
+Gastar menos em uma categoria de despesa em um mês, em relação a uma referência escolhida pelo usuário:
+
+- `ORCAMENTO`: o limite do orçamento da categoria no mês
+- `MES_ANTERIOR`: o gasto da categoria no mês anterior
+- `MEDIA_TRES_MESES`: a média do gasto nos 3 meses anteriores (meses sem gasto contam como zero)
+
+Regras principais:
+
+- **Congelamento**: quando o mês da meta começa, a referência é congelada e o limite passa a ser `referência − economia`. O congelamento acontece no primeiro acesso às metas no mês, sem agendador; meta criada para o mês atual já nasce congelada
+- Se no congelamento a economia for maior ou igual à referência, ou a referência não puder mais ser calculada, a meta é **cancelada automaticamente**
+- Antes de congelar, a meta pode ser editada; depois, só cancelada
+- Status calculado: `AGUARDANDO_INICIO`, `EM_ANDAMENTO`, `NAO_ATINGIDA` (já passou do limite), `ATINGIDA` (mês terminou dentro do limite) e `CANCELADA`
+- Arquivar a categoria ou excluir o orçamento vinculado **cancela automaticamente** as metas pendentes
+
+| Método | Rota                                    | Descrição                                                    |
+|--------|-----------------------------------------|--------------------------------------------------------------|
+| GET    | `/api/metas-economia?mes=2026-10`       | Metas do mês com gasto, limite, economia realizada e status  |
+| GET    | `/api/metas-economia/{id}`              | Detalhe da meta                                              |
+| POST   | `/api/metas-economia`                   | Cria a meta (uma ativa por categoria e mês)                  |
+| PUT    | `/api/metas-economia/{id}`              | Edita referência e economia antes do congelamento            |
+| PATCH  | `/api/metas-economia/{id}/cancelar`     | Cancela a meta pendente                                      |
+
+---
+
+## 🐷 Metas de poupança
+
+Juntar dinheiro para um objetivo (ex.: uma viagem), independente de categoria:
+
+- Valor alvo e prazo opcional (não pode estar no passado)
+- **Aportes** (valores positivos) e **resgates** (negativos); o acumulado nunca fica negativo
+- Ao atingir o alvo, a meta é **concluída**: a conquista é permanente, aceita apenas resgates e não volta a ficar ativa
+- **Cancelar** preserva o acumulado como histórico; meta cancelada não aceita novos lançamentos
+- Aportes são **imutáveis**, como um extrato: correções são feitas com um lançamento contrário
+- Acompanhamento: acumulado, percentual, quanto falta e, com prazo, **quanto guardar por mês** (do mês atual até o mês do prazo, arredondado para cima)
+
+| Método | Rota                                   | Descrição                                               |
+|--------|----------------------------------------|---------------------------------------------------------|
+| GET    | `/api/metas-poupanca?status=ATIVA`     | Metas do usuário, com filtro opcional por status        |
+| GET    | `/api/metas-poupanca/{id}`             | Detalhe com acumulado, percentual e valor por mês       |
+| POST   | `/api/metas-poupanca`                  | Cria a meta                                             |
+| PUT    | `/api/metas-poupanca/{id}`             | Edita nome, alvo e prazo (somente meta ativa)           |
+| PATCH  | `/api/metas-poupanca/{id}/cancelar`    | Cancela a meta ativa                                    |
+| POST   | `/api/metas-poupanca/{id}/aportes`     | Registra aporte ou resgate                              |
+| GET    | `/api/metas-poupanca/{id}/aportes`     | Extrato paginado, do mais recente para o mais antigo    |
+
+---
+
+## 📈 Dashboard
+
+`GET /api/dashboard?mes=2026-10` (padrão: mês atual) devolve, em uma única chamada:
+
+- **Resumo** do mês: receitas, despesas e saldo
+- **Comparação com o mês anterior**: variação percentual de cada total (`null` quando o mês anterior é zero, sem base de comparação)
+- **Gastos por categoria** (despesas) e **receitas por categoria**, do maior para o menor, com o percentual de cada uma e a cor da categoria para os gráficos
+- **Evolução mensal** dos últimos 6 meses, com zero nos meses sem movimento
+
+Tudo é calculado com **duas consultas agregadas** no banco (`SUM ... GROUP BY`): uma por mês e tipo, que também alimenta o resumo e a comparação, e outra por categoria. Nenhuma transação é carregada para ser somada no Java.
+
+```json
+{
+  "mes": "2026-10",
+  "resumo": { "mes": "2026-10", "receitas": 6000.00, "despesas": 2000.00, "saldo": 4000.00 },
+  "comparacaoMesAnterior": { "receitas": 50.00, "despesas": 25.00, "saldo": 66.67 },
+  "gastosPorCategoria": [
+    { "categoria": { "nome": "Moradia", "cor": "#8B5CF6" }, "total": 1400.00, "percentual": 70.00 }
+  ],
+  "receitasPorCategoria": [
+    { "categoria": { "nome": "Salário", "cor": "#22C55E" }, "total": 5000.00, "percentual": 83.33 }
+  ],
+  "evolucaoMensal": [
+    { "mes": "2026-05", "receitas": 0.00, "despesas": 0.00, "saldo": 0.00 }
+  ]
+}
+```
+
+---
+
 ## 🧩 Diagramas
 
 ### Casos de Uso
@@ -130,7 +231,6 @@ Filtros combináveis do histórico: `inicio`, `fim`, `categoriaId`, `tipo` e `te
 ```mermaid
 flowchart LR
     usuario["👤 Usuário"]
-    agendador["⏱️ Agendador"]
 
     subgraph monify["Monify — controle de gastos"]
         uc01(["UC01 Criar conta"])
@@ -154,7 +254,8 @@ flowchart LR
     usuario --- uc08 & uc09 & uc10 & uc11 & uc12 & uc13
     uc03 -.->|"«include»"| cancelar
     uc07 -.->|"«include»"| cancelar
-    agendador --- uc14
+    uc10 -.->|"«include»"| uc14
+    uc11 -.->|"«include»"| uc14
 
     classDef caso fill:#eeedfe,stroke:#534ab7,color:#3c3489
     classDef incluido fill:#e1f5ee,stroke:#0f6e56,color:#085041
@@ -163,7 +264,7 @@ flowchart LR
 ```
 
 - **Cancelar metas vinculadas** é incluído ao arquivar uma categoria (UC03) e ao excluir um orçamento (UC07): as metas de economia pendentes são canceladas automaticamente.
-- **Agendador** congela a referência das metas de economia no início do mês.
+- **Congelar referência da meta** (UC14) acontece ao gerenciar ou acompanhar as metas: as metas cujo mês já começou são congeladas no primeiro acesso, sem depender de agendador.
 
 ### Classes
 
@@ -225,9 +326,11 @@ classDiagram
         -UUID usuarioId
         -YearMonth mesReferencia
         -BigDecimal valorLimite
-        +alterarLimite(valorLimite) void
+        +alterarLimite(valorLimite, mesAtual) void
+        +validarMesNaoPassado(mesAtual) void
         +calcularStatus(gasto) StatusOrcamento
         +calcularRestante(gasto) BigDecimal
+        +calcularPercentual(gasto) BigDecimal
     }
 
     class MetaEconomia {
@@ -243,6 +346,9 @@ classDiagram
         +editar(tipoReferencia, orcamento, valorEconomia) void
         +deveCongelar(mesAtual) boolean
         +congelar(valorReferencia, agora) void
+        +congelarNoInicioDoMes(valorReferencia, agora) void
+        +permiteEconomia(valorReferencia) boolean
+        +desvincularOrcamento() void
         +cancelar(gastoNoMes, mesAtual, agora) void
         +calcularStatus(gastoNoMes, mesAtual) StatusMetaEconomia
         +calcularEconomiaRealizada(gastoNoMes) BigDecimal
@@ -256,9 +362,14 @@ classDiagram
         -LocalDate prazo
         -StatusMetaPoupanca status
         -Instant criadoEm
-        +registrarAporte(valor, data, observacao) Aporte
+        +editar(nome, valorAlvo, prazo, hoje) void
+        +registrarAporte(valor, data, observacao, hoje) Aporte
+        +cancelar() void
         +calcularAcumulado() BigDecimal
-        +calcularFaltante() BigDecimal
+        +calcularFaltante(acumulado) BigDecimal
+        +calcularPercentual(acumulado) BigDecimal
+        +calcularValorPorMes(acumulado, hoje) BigDecimal
+        +isPrazoVencido(hoje) boolean
     }
 
     class Aporte {
