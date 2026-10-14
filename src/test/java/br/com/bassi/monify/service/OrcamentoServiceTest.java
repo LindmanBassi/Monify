@@ -54,6 +54,9 @@ class OrcamentoServiceTest {
     @Mock
     private TransacaoRepository transacaoRepository;
 
+    @Mock
+    private MetaEconomiaService metaEconomiaService;
+
     private OrcamentoService orcamentoService;
 
     private final Categoria mercado = new Categoria(USUARIO_ID, "Mercado", TipoTransacao.DESPESA, "#FF0000");
@@ -61,7 +64,7 @@ class OrcamentoServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(mercado, "id", CATEGORIA_ID);
-        orcamentoService = new OrcamentoService(orcamentoRepository, categoriaRepository, transacaoRepository, CLOCK);
+        orcamentoService = new OrcamentoService(orcamentoRepository, categoriaRepository, transacaoRepository, metaEconomiaService, CLOCK);
     }
 
     private Orcamento orcamentoDeMil() {
@@ -200,6 +203,7 @@ class OrcamentoServiceTest {
             orcamentoService.excluir(USUARIO_ID, ORCAMENTO_ID);
 
             //Assert
+            verify(metaEconomiaService).cancelarPendentesDoOrcamento(USUARIO_ID, ORCAMENTO_ID);
             verify(orcamentoRepository).delete(orcamento);
         }
 

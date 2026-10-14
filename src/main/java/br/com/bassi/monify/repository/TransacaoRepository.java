@@ -42,4 +42,8 @@ public interface TransacaoRepository extends JpaRepository<Transacao, UUID>, Jpa
                and t.dataOcorrencia between :inicio and :fim
             """)
     BigDecimal somarDaCategoria(UUID usuarioId, UUID categoriaId, LocalDate inicio, LocalDate fim);
+
+    // início do histórico: data da primeira transação do usuário, em qualquer categoria
+    @Query("select min(t.dataOcorrencia) from Transacao t where t.usuarioId = :usuarioId")
+    LocalDate buscarPrimeiraDataOcorrencia(UUID usuarioId);
 }

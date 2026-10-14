@@ -33,6 +33,9 @@ class CategoriaServiceTest {
     @Mock
     private CategoriaRepository categoriaRepository;
 
+    @Mock
+    private MetaEconomiaService metaEconomiaService;
+
     @InjectMocks
     private CategoriaService categoriaService;
 
@@ -137,7 +140,7 @@ class CategoriaServiceTest {
     class arquivar {
 
         @Test
-        @DisplayName("Deve arquivar a categoria do usuário")
+        @DisplayName("Deve arquivar a categoria do usuário e cancelar as metas pendentes dela")
         void deveArquivarCategoria() {
 
             //Arrange
@@ -149,6 +152,7 @@ class CategoriaServiceTest {
 
             //Assert
             assertTrue(categoria.isArquivada());
+            verify(metaEconomiaService).cancelarPendentesDaCategoria(USUARIO_ID, CATEGORIA_ID);
         }
     }
 
