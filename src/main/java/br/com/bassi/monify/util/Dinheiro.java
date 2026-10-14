@@ -43,4 +43,9 @@ public final class Dinheiro {
     public static BigDecimal calcularPercentual(BigDecimal parte, BigDecimal total) {
         return parte.multiply(CEM).divide(total, ESCALA, ARREDONDAMENTO);
     }
+
+    // para valores a guardar: arredondar para cima garante que a soma das parcelas alcance o total
+    public static BigDecimal dividirArredondandoParaCima(BigDecimal valor, long divisor) {
+        return valor.divide(BigDecimal.valueOf(divisor), ESCALA, RoundingMode.UP);
+    }
 }

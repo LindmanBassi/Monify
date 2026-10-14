@@ -195,9 +195,9 @@ class MapeamentoEntidadesTest {
         void devePersistirAportesEmCascata() {
 
             //Arrange
-            var viagem = new MetaPoupanca(usuario.getId(), "Viagem", new BigDecimal("1000"), null);
-            viagem.registrarAporte(new BigDecimal("300"), LocalDate.of(2026, 10, 1), "Salário");
-            viagem.registrarAporte(new BigDecimal("-50"), LocalDate.of(2026, 10, 5), null);
+            var viagem = new MetaPoupanca(usuario.getId(), "Viagem", new BigDecimal("1000"), null, LocalDate.of(2026, 10, 9));
+            viagem.registrarAporte(new BigDecimal("300"), LocalDate.of(2026, 10, 1), "Salário", LocalDate.of(2026, 10, 9));
+            viagem.registrarAporte(new BigDecimal("-50"), LocalDate.of(2026, 10, 5), null, LocalDate.of(2026, 10, 9));
             em.persist(viagem);
 
             //Act
