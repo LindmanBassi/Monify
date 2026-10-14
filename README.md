@@ -23,7 +23,8 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Categorias (CRUD, arquivar e desarquivar, isolamento por usuário)
 - [x] Transações (CRUD, histórico com filtros combináveis e paginação)
 - [x] Orçamentos mensais (gasto, restante, percentual e status calculados no banco)
-- [ ] Metas de economia, metas de poupança e dashboard
+- [x] Metas de economia (referência congelada no início do mês e cancelamento automático)
+- [ ] Metas de poupança e dashboard
 - [ ] Frontend em React
 - [ ] Deploy na AWS
 
@@ -143,6 +144,32 @@ Filtros combináveis do histórico: `inicio`, `fim`, `categoriaId`, `tipo` e `te
 
 ---
 
+## 🎯 Metas de economia
+
+Gastar menos em uma categoria de despesa em um mês, em relação a uma referência escolhida pelo usuário:
+
+- `ORCAMENTO`: o limite do orçamento da categoria no mês
+- `MES_ANTERIOR`: o gasto da categoria no mês anterior
+- `MEDIA_TRES_MESES`: a média do gasto nos 3 meses anteriores (meses sem gasto contam como zero)
+
+Regras principais:
+
+- **Congelamento**: quando o mês da meta começa, a referência é congelada e o limite passa a ser `referência − economia`. O congelamento acontece no primeiro acesso às metas no mês, sem agendador; meta criada para o mês atual já nasce congelada
+- Se no congelamento a economia for maior ou igual à referência, ou a referência não puder mais ser calculada, a meta é **cancelada automaticamente**
+- Antes de congelar, a meta pode ser editada; depois, só cancelada
+- Status calculado: `AGUARDANDO_INICIO`, `EM_ANDAMENTO`, `NAO_ATINGIDA` (já passou do limite), `ATINGIDA` (mês terminou dentro do limite) e `CANCELADA`
+- Arquivar a categoria ou excluir o orçamento vinculado **cancela automaticamente** as metas pendentes
+
+| Método | Rota                                    | Descrição                                                    |
+|--------|-----------------------------------------|--------------------------------------------------------------|
+| GET    | `/api/metas-economia?mes=2026-10`       | Metas do mês com gasto, limite, economia realizada e status  |
+| GET    | `/api/metas-economia/{id}`              | Detalhe da meta                                              |
+| POST   | `/api/metas-economia`                   | Cria a meta (uma ativa por categoria e mês)                  |
+| PUT    | `/api/metas-economia/{id}`              | Edita referência e economia antes do congelamento            |
+| PATCH  | `/api/metas-economia/{id}/cancelar`     | Cancela a meta pendente                                      |
+
+---
+
 ## 🧩 Diagramas
 
 ### Casos de Uso
@@ -150,7 +177,6 @@ Filtros combináveis do histórico: `inicio`, `fim`, `categoriaId`, `tipo` e `te
 ```mermaid
 flowchart LR
     usuario["👤 Usuário"]
-    agendador["⏱️ Agendador"]
 
     subgraph monify["Monify — controle de gastos"]
         uc01(["UC01 Criar conta"])
@@ -174,7 +200,8 @@ flowchart LR
     usuario --- uc08 & uc09 & uc10 & uc11 & uc12 & uc13
     uc03 -.->|"«include»"| cancelar
     uc07 -.->|"«include»"| cancelar
-    agendador --- uc14
+    uc10 -.->|"«include»"| uc14
+    uc11 -.->|"«include»"| uc14
 
     classDef caso fill:#eeedfe,stroke:#534ab7,color:#3c3489
     classDef incluido fill:#e1f5ee,stroke:#0f6e56,color:#085041
@@ -183,7 +210,7 @@ flowchart LR
 ```
 
 - **Cancelar metas vinculadas** é incluído ao arquivar uma categoria (UC03) e ao excluir um orçamento (UC07): as metas de economia pendentes são canceladas automaticamente.
-- **Agendador** congela a referência das metas de economia no início do mês.
+- **Congelar referência da meta** (UC14) acontece ao gerenciar ou acompanhar as metas: as metas cujo mês já começou são congeladas no primeiro acesso, sem depender de agendador.
 
 ### Classes
 
@@ -265,6 +292,9 @@ classDiagram
         +editar(tipoReferencia, orcamento, valorEconomia) void
         +deveCongelar(mesAtual) boolean
         +congelar(valorReferencia, agora) void
+        +congelarNoInicioDoMes(valorReferencia, agora) void
+        +permiteEconomia(valorReferencia) boolean
+        +desvincularOrcamento() void
         +cancelar(gastoNoMes, mesAtual, agora) void
         +calcularStatus(gastoNoMes, mesAtual) StatusMetaEconomia
         +calcularEconomiaRealizada(gastoNoMes) BigDecimal

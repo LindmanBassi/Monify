@@ -29,6 +29,7 @@ public class OrcamentoService {
     private final OrcamentoRepository orcamentoRepository;
     private final CategoriaRepository categoriaRepository;
     private final TransacaoRepository transacaoRepository;
+    private final MetaEconomiaService metaEconomiaService;
     private final Clock clock;
 
     public record OrcamentoDefinido(OrcamentoResponse orcamento, boolean criado) {
@@ -85,12 +86,14 @@ public class OrcamentoService {
         buscarDoUsuario(usuarioId, id).alterarLimite(request.valorLimite(), mesAtual());
     }
 
-    // PENDENTE: cancelar as metas de economia pendentes vinculadas (etapa de metas)
+    // excluir cancela as metas de economia pendentes vinculadas ao orçamento
     @Transactional
     public void excluir(UUID usuarioId, UUID id) {
 
         var orcamento = buscarDoUsuario(usuarioId, id);
         orcamento.validarMesNaoPassado(mesAtual());
+
+        metaEconomiaService.cancelarPendentesDoOrcamento(usuarioId, id);
         orcamentoRepository.delete(orcamento);
     }
 
