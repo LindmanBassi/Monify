@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  --color-fundo: #F4F5F7;
+  --color-superficie: #FFFFFF;
+  --color-borda: #E4E6EB;
+  --color-borda-campo: #D5D8DE;
+  --color-tinta: #14161A;
+  --color-texto-medio: #3A3F49;
+  --color-texto-suave: #5B606B;
+
+  --color-destaque: #4338CA;
+  --color-destaque-escuro: #312E81;
+  --color-destaque-suave: #EEF0FF;
+
+  --color-receita: #0F766E;
+  --color-despesa: #C2410C;
+
+  --color-erro-fundo: #FDECEC;
+  --color-erro-texto: #8A1C1C;
+}
+
+@layer base {
+  body {
+    @apply bg-fundo text-tinta font-sans antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+}
