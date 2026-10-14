@@ -43,6 +43,26 @@ public interface TransacaoRepository extends JpaRepository<Transacao, UUID>, Jpa
             """)
     BigDecimal somarDaCategoria(UUID usuarioId, UUID categoriaId, LocalDate inicio, LocalDate fim);
 
+    @Query("""
+            select year(t.dataOcorrencia) as ano, month(t.dataOcorrencia) as mes, t.tipo as tipo, sum(t.valor) as total
+              from Transacao t
+             where t.usuarioId = :usuarioId
+               and t.dataOcorrencia between :inicio and :fim
+             group by year(t.dataOcorrencia), month(t.dataOcorrencia), t.tipo
+            """)
+    List<TotalMensalPorTipo> somarPorMesETipo(UUID usuarioId, LocalDate inicio, LocalDate fim);
+
+    @Query("""
+            select c as categoria, sum(t.valor) as total
+              from Transacao t
+              join t.categoria c
+             where t.usuarioId = :usuarioId
+               and t.dataOcorrencia between :inicio and :fim
+             group by c
+             order by sum(t.valor) desc, c.nome
+            """)
+    List<TotalPorCategoria> somarPorCategoria(UUID usuarioId, LocalDate inicio, LocalDate fim);
+
     // início do histórico: data da primeira transação do usuário, em qualquer categoria
     @Query("select min(t.dataOcorrencia) from Transacao t where t.usuarioId = :usuarioId")
     LocalDate buscarPrimeiraDataOcorrencia(UUID usuarioId);

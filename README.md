@@ -25,7 +25,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Orçamentos mensais (gasto, restante, percentual e status calculados no banco)
 - [x] Metas de economia (referência congelada no início do mês e cancelamento automático)
 - [x] Metas de poupança (aportes, resgates e quanto guardar por mês)
-- [ ] Dashboard
+- [x] Dashboard (resumo do mês, comparação, totais por categoria e evolução de 6 meses)
 - [ ] Frontend em React
 - [ ] Deploy na AWS
 
@@ -57,8 +57,8 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
   - Aportes e resgates, sem permitir acumulado negativo
   - Conclusão automática ao atingir o alvo
 - 📈 Dashboard
-  - Receitas, despesas e saldo do período
-  - Gastos por categoria e evolução mensal
+  - Receitas, despesas e saldo do mês, com variação em relação ao mês anterior
+  - Gastos e receitas por categoria e evolução dos últimos 6 meses
   - Tudo calculado com queries agregadas no banco
 
 ---
@@ -191,6 +191,36 @@ Juntar dinheiro para um objetivo (ex.: uma viagem), independente de categoria:
 | PATCH  | `/api/metas-poupanca/{id}/cancelar`    | Cancela a meta ativa                                    |
 | POST   | `/api/metas-poupanca/{id}/aportes`     | Registra aporte ou resgate                              |
 | GET    | `/api/metas-poupanca/{id}/aportes`     | Extrato paginado, do mais recente para o mais antigo    |
+
+---
+
+## 📈 Dashboard
+
+`GET /api/dashboard?mes=2026-10` (padrão: mês atual) devolve, em uma única chamada:
+
+- **Resumo** do mês: receitas, despesas e saldo
+- **Comparação com o mês anterior**: variação percentual de cada total (`null` quando o mês anterior é zero, sem base de comparação)
+- **Gastos por categoria** (despesas) e **receitas por categoria**, do maior para o menor, com o percentual de cada uma e a cor da categoria para os gráficos
+- **Evolução mensal** dos últimos 6 meses, com zero nos meses sem movimento
+
+Tudo é calculado com **duas consultas agregadas** no banco (`SUM ... GROUP BY`): uma por mês e tipo, que também alimenta o resumo e a comparação, e outra por categoria. Nenhuma transação é carregada para ser somada no Java.
+
+```json
+{
+  "mes": "2026-10",
+  "resumo": { "mes": "2026-10", "receitas": 6000.00, "despesas": 2000.00, "saldo": 4000.00 },
+  "comparacaoMesAnterior": { "receitas": 50.00, "despesas": 25.00, "saldo": 66.67 },
+  "gastosPorCategoria": [
+    { "categoria": { "nome": "Moradia", "cor": "#8B5CF6" }, "total": 1400.00, "percentual": 70.00 }
+  ],
+  "receitasPorCategoria": [
+    { "categoria": { "nome": "Salário", "cor": "#22C55E" }, "total": 5000.00, "percentual": 83.33 }
+  ],
+  "evolucaoMensal": [
+    { "mes": "2026-05", "receitas": 0.00, "despesas": 0.00, "saldo": 0.00 }
+  ]
+}
+```
 
 ---
 
