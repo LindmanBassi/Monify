@@ -8,5 +8,6 @@ import java.time.Duration;
 public record PropriedadesAutenticacao(
         String segredoJwt,
         Duration duracaoTokenAcesso,
-        Duration duracaoTokenRenovacao) {
+        Duration duracaoTokenRenovacao,
+        boolean cookieSeguro) {
 }

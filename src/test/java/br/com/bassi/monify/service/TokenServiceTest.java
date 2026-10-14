@@ -28,7 +28,7 @@ class TokenServiceTest {
             "segredo-de-teste-com-pelo-menos-32-bytes".getBytes(StandardCharsets.UTF_8), "HmacSHA256");
 
     private final PropriedadesAutenticacao propriedades = new PropriedadesAutenticacao(
-            "nao-utilizado", Duration.ofMinutes(15), Duration.ofDays(7));
+            "nao-utilizado", Duration.ofMinutes(15), Duration.ofDays(7), true);
 
     private final TokenService tokenService = new TokenService(
             NimbusJwtEncoder.withSecretKey(chave).algorithm(MacAlgorithm.HS256).build(),

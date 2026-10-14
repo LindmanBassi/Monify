@@ -26,7 +26,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Metas de economia (referência congelada no início do mês e cancelamento automático)
 - [x] Metas de poupança (aportes, resgates e quanto guardar por mês)
 - [x] Dashboard (resumo do mês, comparação, totais por categoria e evolução de 6 meses)
-- [ ] Frontend em React
+- [ ] Frontend em React — base pronta: login, cadastro, sessão e menu (telas em construção)
 - [ ] Deploy na AWS
 
 ---
@@ -76,7 +76,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 
 - Senha armazenada com **BCrypt**
 - **Access token** JWT assinado com HMAC (HS256), válido por 15 minutos
-- **Refresh token** opaco e aleatório, válido por 7 dias; no banco fica **apenas o hash SHA-256**
+- **Refresh token** opaco e aleatório, válido por 7 dias, enviado em **cookie `httpOnly`** (`Secure`, `SameSite=Strict`, restrito a `/api/auth`): o JavaScript do frontend nunca o enxerga. No banco fica **apenas o hash SHA-256**
 - **Rotação**: cada renovação revoga o refresh token usado e emite um novo par
 - **Detecção de reuso**: reutilizar um refresh token já revogado revoga todas as sessões do usuário
 - Falha de login responde sempre "credenciais inválidas", sem revelar se o e-mail existe
@@ -85,9 +85,9 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 | Método | Rota                  | Autenticação | Descrição                                   |
 |--------|-----------------------|--------------|---------------------------------------------|
 | POST   | `/api/auth/cadastro`  | —            | Cria a conta e copia as categorias padrão   |
-| POST   | `/api/auth/login`     | —            | Retorna access token e refresh token        |
-| POST   | `/api/auth/renovar`   | —            | Troca o refresh token por um novo par       |
-| POST   | `/api/auth/logout`    | —            | Revoga o refresh token                      |
+| POST   | `/api/auth/login`     | —            | Retorna o access token e grava o cookie     |
+| POST   | `/api/auth/renovar`   | Cookie       | Troca o refresh token por um novo par       |
+| POST   | `/api/auth/logout`    | Cookie       | Revoga o refresh token e apaga o cookie     |
 | GET    | `/api/usuarios/me`    | Bearer       | Dados do usuário autenticado                |
 
 ---
@@ -538,8 +538,14 @@ Erros padronizados no formato **`ProblemDetail` (RFC 9457)**, centralizados em u
 - Maven
 - GitHub Actions
 
+Frontend:
+- React 19 + TypeScript, com Vite
+- Tailwind CSS
+- React Router, TanStack Query, React Hook Form + Zod
+- Vitest + Testing Library
+
 Planejadas nas próximas etapas:
-- React, TypeScript, Tailwind CSS e Recharts
+- Recharts (gráficos do dashboard)
 - AWS
 
 ---
@@ -548,6 +554,7 @@ Planejadas nas próximas etapas:
 
 - JDK 21
 - Docker e Docker Compose
+- Node.js 22 (para o frontend)
 
 O projeto já possui um `docker-compose.yml` que sobe o MySQL com o banco `monify` na porta **3307**. As tabelas são criadas automaticamente pelo Flyway quando a aplicação inicia.
 
@@ -559,6 +566,7 @@ A configuração pode ser ajustada por variáveis de ambiente:
 | `DB_USERNAME` | `monify`                              | Usuário do banco                           |
 | `DB_PASSWORD` | `monify`                              | Senha do banco                             |
 | `JWT_SEGREDO` | segredo local de desenvolvimento      | Segredo HMAC do JWT (mínimo de 32 bytes)   |
+| `COOKIE_SEGURO` | `true`                              | Marca o cookie de sessão como `Secure`     |
 
 > ⚠️ Os valores padrão servem apenas para o ambiente local. Em produção, `JWT_SEGREDO` deve ser um segredo forte e exclusivo.
 
@@ -582,12 +590,32 @@ Com o JDK 21 configurado:
 
 Ou rode diretamente pela sua IDE (ex: IntelliJ IDEA).
 
-### 3️⃣ Testar pelo Swagger
+### 3️⃣ Rodar o frontend
+
+Com o backend rodando, em outro terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Acesse **http://localhost:5173**. Em desenvolvimento, o Vite repassa as chamadas `/api` para o backend na porta 8080, então frontend e API ficam na mesma origem e o cookie de sessão funciona sem configuração de CORS.
+
+Testes, lint e build do frontend:
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+### 4️⃣ Testar pelo Swagger
 
 Acesse **http://localhost:8080/swagger-ui.html**.
 
 1. Crie uma conta em `POST /api/auth/cadastro`
-2. Faça login em `POST /api/auth/login` e copie o `tokenAcesso`
+2. Faça login em `POST /api/auth/login` e copie o `tokenAcesso` (o refresh token fica no cookie do navegador)
 3. Clique em **Authorize**, cole o token e teste as rotas protegidas
 
 ---
