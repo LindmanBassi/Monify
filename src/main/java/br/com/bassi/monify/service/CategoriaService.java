@@ -47,11 +47,11 @@ public class CategoriaService {
             throw nomeDuplicado(request.tipo());
         }
 
-        var categoria = categoriaRepository.save(new Categoria(usuarioId, nome, request.tipo(), request.cor()));
+        var categoria = categoriaRepository.save(new Categoria(usuarioId, nome, request.tipo(), request.cor(), request.icone()));
         return CategoriaResponse.from(categoria);
     }
 
-    // tipo fixo: só nome e cor podem ser editados
+    // tipo fixo: só nome, cor e ícone podem ser editados
     @Transactional
     public void editar(UUID usuarioId, UUID id, EditarCategoriaRequest request) {
 
@@ -62,7 +62,7 @@ public class CategoriaService {
             throw nomeDuplicado(categoria.getTipo());
         }
 
-        categoria.editar(nome, request.cor());
+        categoria.editar(nome, request.cor(), request.icone());
     }
 
     // remover = arquivar: o histórico permanece intacto e as metas de economia pendentes são canceladas

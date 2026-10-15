@@ -1,7 +1,8 @@
+import { Archive, ArchiveRestore, Pencil, Plus, Shapes } from 'lucide-react'
 import { useState } from 'react'
 import type { Categoria, TipoTransacao } from '../../api/categorias'
-import { Botao, CabecalhoPagina } from '../../componentes/ui'
-import { mensagemDeErro } from '../../lib/erros'
+import { SeloCategoria } from '../../componentes/IconeCategoria'
+import { Botao, BotaoIcone, CabecalhoPagina, EstadoVazio, RodapeCartao, Selo } from '../../componentes/ui'
 import {
   useArquivarCategoria,
   useCategorias,
@@ -9,6 +10,7 @@ import {
   useDesarquivarCategoria,
   useEditarCategoria,
 } from '../../consultas/categorias'
+import { mensagemDeErro } from '../../lib/erros'
 import { FormularioCategoria, type DadosCategoria } from './FormularioCategoria'
 
 const abas: { tipo: TipoTransacao; rotulo: string }[] = [
@@ -37,12 +39,18 @@ export function Categorias() {
     })
   }
 
+  function abrirCriacao() {
+    criar.reset()
+    setCriando(true)
+  }
+
   return (
-    <div className="flex flex-col gap-5">
+    <>
       <CabecalhoPagina
+        sobretitulo="Tudo no seu lugar"
         titulo="Categorias"
-        descricao="Organize receitas e despesas. O tipo de uma categoria não muda depois de criada."
-        acoes={!criando && <Botao onClick={() => { criar.reset(); setCriando(true) }}>Nova categoria</Botao>}
+        descricao="Uma organização que faz sentido para você. O tipo de uma categoria não muda depois de criada."
+        acoes={!criando && <Botao Icone={Plus} onClick={abrirCriacao}>Nova categoria</Botao>}
       />
 
       {criando && (
@@ -58,7 +66,7 @@ export function Categorias() {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Tipo de categoria" className="grid grid-cols-2 gap-1 rounded-xl bg-[#E9EBEF] p-1">
+        <div role="tablist" aria-label="Tipo de categoria" className="grid grid-cols-2 gap-1 rounded-xl bg-[#E8ECEA] p-1">
           {abas.map((aba) => (
             <button
               key={aba.tipo}
@@ -67,19 +75,19 @@ export function Categorias() {
               aria-selected={tipo === aba.tipo}
               onClick={() => setTipo(aba.tipo)}
               className={`h-10 cursor-pointer rounded-[9px] px-5 text-sm ${
-                tipo === aba.tipo ? 'bg-superficie font-bold shadow-sm' : 'font-semibold text-texto-suave'
+                tipo === aba.tipo ? 'bg-superficie font-semibold shadow-sm' : 'font-medium text-texto-suave'
               }`}
             >
               {aba.rotulo}
             </button>
           ))}
         </div>
-        <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-texto-medio">
+        <label className="flex min-h-11 items-center gap-2 text-sm text-texto-medio">
           <input
             type="checkbox"
             checked={mostrarArquivadas}
             onChange={(evento) => setMostrarArquivadas(evento.target.checked)}
-            className="size-4 accent-destaque"
+            className="size-4 accent-destaque-escuro"
           />
           Mostrar arquivadas
         </label>
@@ -88,17 +96,23 @@ export function Categorias() {
       {categorias.isPending && <p role="status" className="text-sm text-texto-suave">Carregando categorias…</p>}
       {categorias.isError && <p role="alert" className="text-sm text-erro-texto">{mensagemDeErro(categorias.error)}</p>}
 
-      {categorias.isSuccess && (
-        <ul aria-label="Categorias" className="flex flex-col overflow-hidden rounded-[14px] border border-borda bg-superficie">
-          {visiveis.length === 0 && (
-            <li className="p-5 text-sm text-texto-suave">Nenhuma categoria por aqui.</li>
-          )}
+      {categorias.isSuccess && visiveis.length === 0 && (
+        <EstadoVazio
+          Icone={Shapes}
+          titulo="Nenhuma categoria por aqui"
+          texto="Crie categorias para organizar suas receitas e despesas do seu jeito."
+          acao={<Botao variante="secundario" Icone={Plus} onClick={abrirCriacao}>Criar categoria</Botao>}
+        />
+      )}
+
+      {categorias.isSuccess && visiveis.length > 0 && (
+        <ul aria-label="Categorias" className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">
           {visiveis.map((categoria) => (
             <ItemCategoria key={categoria.id} categoria={categoria} />
           ))}
         </ul>
       )}
-    </div>
+    </>
   )
 }
 
@@ -111,15 +125,15 @@ function ItemCategoria({ categoria }: { categoria: Categoria }) {
 
   if (editando) {
     return (
-      <li className="border-t border-[#EEF0F3] p-3 first:border-t-0">
+      <li className="col-span-full">
         <FormularioCategoria
           titulo={`Editar ${categoria.nome}`}
-          inicial={{ nome: categoria.nome, tipo: categoria.tipo, cor: categoria.cor }}
+          inicial={{ nome: categoria.nome, tipo: categoria.tipo, cor: categoria.cor, icone: categoria.icone }}
           permitirTipo={false}
           erro={mensagemDeErro(editar.error)}
           salvando={editar.isPending}
-          aoSalvar={({ nome, cor }) =>
-            editar.mutate({ id: categoria.id, nome, cor }, { onSuccess: () => setEditando(false) })
+          aoSalvar={({ nome, cor, icone }) =>
+            editar.mutate({ id: categoria.id, nome, cor, icone }, { onSuccess: () => setEditando(false) })
           }
           aoCancelar={() => setEditando(false)}
         />
@@ -128,39 +142,52 @@ function ItemCategoria({ categoria }: { categoria: Categoria }) {
   }
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 border-t border-[#EEF0F3] px-5 py-3 first:border-t-0">
-      <div className="flex min-w-0 items-center gap-3">
-        <span aria-hidden="true" className="size-3.5 shrink-0 rounded-full" style={{ backgroundColor: categoria.cor }} />
-        <span className={`truncate text-sm font-bold ${categoria.arquivada ? 'text-texto-suave' : ''}`}>{categoria.nome}</span>
-        {categoria.arquivada && (
-          <span className="rounded-full bg-[#ECEDF0] px-2.5 py-0.5 text-xs font-bold text-texto-medio">Arquivada</span>
-        )}
+    <li className="flex flex-col gap-5 rounded-2xl border border-borda bg-superficie p-6">
+      <div className="flex items-start gap-3.5">
+        <SeloCategoria icone={categoria.icone} cor={categoria.cor} />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h2 className={`truncate text-base font-semibold ${categoria.arquivada ? 'text-texto-suave' : ''}`}>{categoria.nome}</h2>
+          <span className="text-xs text-texto-suave">
+            Categoria de {categoria.tipo === 'RECEITA' ? 'receita' : 'despesa'}
+          </span>
+        </div>
+        {categoria.arquivada && <Selo tom="neutro">Arquivada</Selo>}
       </div>
 
       {confirmandoArquivo ? (
-        <div className="flex flex-wrap items-center gap-2 text-[13px]">
+        <div className="mt-auto flex flex-col gap-2 border-t border-borda pt-3 text-[13px]">
           <span className="font-semibold text-texto-medio">Arquivar? As metas de economia pendentes dela serão canceladas.</span>
-          <Botao variante="secundario" onClick={() => setConfirmandoArquivo(false)}>Voltar</Botao>
-          <Botao
-            disabled={arquivar.isPending}
-            onClick={() => arquivar.mutate(categoria.id, { onSuccess: () => setConfirmandoArquivo(false) })}
-          >
-            Arquivar
-          </Botao>
+          <div className="flex gap-2">
+            <Botao variante="secundario" onClick={() => setConfirmandoArquivo(false)}>Voltar</Botao>
+            <Botao
+              disabled={arquivar.isPending}
+              onClick={() => arquivar.mutate(categoria.id, { onSuccess: () => setConfirmandoArquivo(false) })}
+            >
+              Arquivar
+            </Botao>
+          </div>
         </div>
       ) : (
-        <div className="flex gap-1">
-          {!categoria.arquivada && (
-            <Botao variante="texto" onClick={() => { editar.reset(); setEditando(true) }}>Editar</Botao>
-          )}
+        <RodapeCartao>
           {categoria.arquivada ? (
-            <Botao variante="texto" disabled={desarquivar.isPending} onClick={() => desarquivar.mutate(categoria.id)}>
+            <Botao
+              variante="texto"
+              Icone={ArchiveRestore}
+              className="-ml-3"
+              disabled={desarquivar.isPending}
+              onClick={() => desarquivar.mutate(categoria.id)}
+            >
               Desarquivar
             </Botao>
           ) : (
-            <Botao variante="texto" onClick={() => setConfirmandoArquivo(true)}>Arquivar</Botao>
+            <>
+              <Botao variante="texto" Icone={Pencil} className="-ml-3" onClick={() => { editar.reset(); setEditando(true) }}>
+                Editar
+              </Botao>
+              <BotaoIcone Icone={Archive} aria-label={`Arquivar ${categoria.nome}`} onClick={() => setConfirmandoArquivo(true)} />
+            </>
           )}
-        </div>
+        </RodapeCartao>
       )}
     </li>
   )

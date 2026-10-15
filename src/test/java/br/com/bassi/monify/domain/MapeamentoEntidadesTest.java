@@ -1,6 +1,7 @@
 package br.com.bassi.monify.domain;
 
 import br.com.bassi.monify.TestcontainersConfiguration;
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.TipoReferencia;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import jakarta.persistence.PersistenceException;
@@ -37,7 +38,7 @@ class MapeamentoEntidadesTest {
     @BeforeEach
     void setUp() {
         usuario = em.persist(new Usuario("Henrique", "Henrique@Email.com ", "hash"));
-        mercado = em.persist(new Categoria(usuario.getId(), "Mercado", TipoTransacao.DESPESA, "#FF0000"));
+        mercado = em.persist(new Categoria(usuario.getId(), "Mercado", TipoTransacao.DESPESA, "#FF0000", IconeCategoria.ETIQUETA));
     }
 
     private void sincronizar() {

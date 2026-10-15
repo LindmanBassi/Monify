@@ -3,23 +3,25 @@
 @theme {
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
 
-  --color-fundo: #F4F5F7;
+  --color-fundo: #F4F6F5;
   --color-superficie: #FFFFFF;
-  --color-borda: #E4E6EB;
-  --color-borda-campo: #D5D8DE;
-  --color-tinta: #14161A;
-  --color-texto-medio: #3A3F49;
-  --color-texto-suave: #5B606B;
+  --color-borda: #E4E8E6;
+  --color-borda-campo: #D5DBD8;
+  --color-tinta: #141A17;
+  --color-texto-medio: #3B4440;
+  --color-texto-suave: #5C6661;
 
-  --color-destaque: #4338CA;
-  --color-destaque-escuro: #312E81;
-  --color-destaque-suave: #EEF0FF;
+  --color-destaque: #5FDDA0;
+  --color-destaque-hover: #48D08E;
+  --color-destaque-escuro: #0D6B4B;
+  --color-destaque-suave: #DCF3E6;
 
-  --color-receita: #0F766E;
-  --color-despesa: #C2410C;
+  --color-receita: #0B7A53;
+  --color-despesa: #C2462F;
+  --color-escuro: #141A17;
 
-  --color-erro-fundo: #FDECEC;
-  --color-erro-texto: #8A1C1C;
+  --color-erro-fundo: #FDECEA;
+  --color-erro-texto: #9B2C1E;
 }
 
 @layer base {

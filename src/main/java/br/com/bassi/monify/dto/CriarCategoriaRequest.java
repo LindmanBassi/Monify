@@ -1,5 +1,6 @@
 package br.com.bassi.monify.dto;
 
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,5 +18,8 @@ public record CriarCategoriaRequest(
 
         @NotBlank(message = "Cor é obrigatória")
         @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Cor deve estar no formato hexadecimal #RRGGBB")
-        String cor) {
+        String cor,
+
+        @NotNull(message = "Ícone é obrigatório")
+        IconeCategoria icone) {
 }

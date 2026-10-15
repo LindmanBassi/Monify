@@ -5,9 +5,10 @@ import { Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { ErroApi } from '../api/cliente'
 import { useAutenticacao } from '../autenticacao/ContextoAutenticacao'
-import { IconeConfirmar, Logo } from '../componentes/Icones'
+import { CircleCheck } from 'lucide-react'
+import { Marca } from '../componentes/Icones'
 import { Alerta, Campo } from '../componentes/ui'
-import { classeCampo } from '../componentes/estilos'
+import { classeBotao, classeCampo, estilosBotao } from '../componentes/estilos'
 
 // mesmas regras do CadastroRequest da API
 const esquemaEntrar = z.object({
@@ -82,27 +83,29 @@ export function Entrar() {
 
   const estiloAba = (ativa: boolean) =>
     `h-10 cursor-pointer rounded-[9px] text-sm ${
-      ativa ? 'bg-superficie font-bold text-tinta shadow-sm' : 'font-semibold text-texto-suave'
+      ativa ? 'bg-superficie font-semibold text-tinta shadow-sm' : 'font-medium text-texto-suave'
     }`
 
   return (
     <div className="flex min-h-screen flex-wrap">
-      <section className="flex flex-[1_1_420px] flex-col justify-between gap-12 bg-tinta p-14 text-fundo">
-        <div className="flex items-center gap-3">
-          <Logo tamanho={36} />
-          <span className="text-[22px] font-extrabold tracking-tight">Monify</span>
-        </div>
-        <div className="flex max-w-[460px] flex-col gap-5">
-          <h1 className="text-[44px] leading-tight font-extrabold tracking-tight">Seu dinheiro, com clareza.</h1>
-          <p className="text-[17px] leading-relaxed text-[#C9CCD3]">
+      <section className="relative flex flex-[1_1_420px] flex-col justify-between gap-12 overflow-hidden bg-escuro p-10 text-white sm:p-14">
+        <span aria-hidden="true" className="absolute -top-24 -right-20 size-80 rounded-full border-[40px] border-white/[0.04]" />
+        <span aria-hidden="true" className="absolute -right-32 -bottom-40 size-96 rounded-full border-[40px] border-white/[0.03]" />
+        <span className="relative">
+          <Marca escuro />
+        </span>
+        <div className="relative flex max-w-[460px] flex-col gap-5">
+          <span className="text-[11px] font-bold tracking-[0.14em] text-destaque uppercase">Seu dinheiro, em ordem</span>
+          <h1 className="text-[42px] leading-tight font-bold tracking-tight">Mais clareza. Mais possibilidades.</h1>
+          <p className="text-base leading-relaxed text-[#C9D2CD]">
             Registre receitas e despesas, defina orçamentos por categoria e acompanhe metas de economia e de poupança
             em um só lugar.
           </p>
         </div>
-        <ul className="flex flex-col gap-3.5 text-[15px] text-[#DDE0E6]">
+        <ul className="relative flex flex-col gap-3.5 text-[15px] text-[#DCE3DF]">
           {destaques.map((texto) => (
             <li key={texto} className="flex items-center gap-2.5">
-              <span className="text-[#A5B4FC]"><IconeConfirmar /></span>
+              <CircleCheck size={18} className="flex-none text-destaque" aria-hidden="true" />
               {texto}
             </li>
           ))}
@@ -110,8 +113,8 @@ export function Entrar() {
       </section>
 
       <section className="flex min-w-0 flex-[999_1_480px] items-center justify-center px-6 py-12">
-        <div className="flex w-full max-w-[420px] flex-col gap-6 rounded-[18px] border border-borda bg-superficie p-9">
-          <div role="tablist" aria-label="Acesso" className="grid grid-cols-2 gap-1 rounded-xl bg-[#F0F1F4] p-1">
+        <div className="flex w-full max-w-[420px] flex-col gap-6 rounded-2xl border border-borda bg-superficie p-9 shadow-sm">
+          <div role="tablist" aria-label="Acesso" className="grid grid-cols-2 gap-1 rounded-xl bg-[#E8ECEA] p-1">
             <button type="button" role="tab" aria-selected={modo === 'entrar'} className={estiloAba(modo === 'entrar')} onClick={() => trocarModo('entrar')}>
               Entrar
             </button>
@@ -121,7 +124,7 @@ export function Entrar() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <h2 className="text-2xl font-extrabold tracking-tight">
+            <h2 className="text-2xl font-bold tracking-tight">
               {modo === 'entrar' ? 'Bem-vindo de volta' : 'Crie sua conta'}
             </h2>
             <p className="text-sm text-texto-suave">
@@ -157,7 +160,7 @@ export function Entrar() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="h-12 cursor-pointer rounded-[10px] bg-destaque text-[15px] font-bold text-white hover:bg-destaque-escuro disabled:cursor-wait disabled:opacity-70"
+              className={`${classeBotao} ${estilosBotao.primario} h-12 text-[15px]`}
             >
               {isSubmitting ? 'Aguarde…' : modo === 'entrar' ? 'Entrar' : 'Criar conta e entrar'}
             </button>

@@ -4,18 +4,18 @@ import { z } from 'zod'
 import type { Categoria } from '../../api/categorias'
 import { ErroApi } from '../../api/cliente'
 import type { Transacao } from '../../api/transacoes'
+import { OpcoesPorTipo } from '../../componentes/OpcoesPorTipo'
 import { Alerta, Botao, Campo } from '../../componentes/ui'
-import { classeCampo } from '../../componentes/estilos'
+import { classeCampo, classeFormulario } from '../../componentes/estilos'
 import { mensagemDeErro } from '../../lib/erros'
+import { valorPositivo } from '../../lib/esquemas'
 import { useSalvarTransacao } from '../../consultas/transacoes'
 import { converterValor, hojeEmSaoPaulo, valorParaCampo } from '../../lib/formatacao'
 
 function criarEsquema(hoje: string) {
   return z.object({
     categoriaId: z.string().min(1, 'Categoria é obrigatória'),
-    valor: z
-      .string()
-      .refine((texto) => (converterValor(texto) ?? 0) > 0, 'Informe um valor maior que zero, com até 2 casas decimais'),
+    valor: valorPositivo(),
     dataOcorrencia: z
       .string()
       .min(1, 'Data da transação é obrigatória')
@@ -25,6 +25,13 @@ function criarEsquema(hoje: string) {
 }
 
 type Campos = z.infer<ReturnType<typeof criarEsquema>>
+
+function corDoTipo(categoria?: Categoria) {
+  if (!categoria) {
+    return ''
+  }
+  return categoria.tipo === 'RECEITA' ? 'text-receita' : 'text-despesa'
+}
 
 type Props = {
   transacao?: Transacao
@@ -87,24 +94,15 @@ export function FormularioTransacao({ transacao, categorias, aoConcluir }: Props
       noValidate
       aria-label={transacao ? 'Editar transação' : 'Nova transação'}
       onSubmit={handleSubmit(enviar)}
-      className="flex flex-col gap-4 rounded-[14px] border border-[#C7D2FE] bg-superficie p-5"
+      className={classeFormulario}
     >
-      <h2 className="text-base font-extrabold">{transacao ? 'Editar transação' : 'Nova transação'}</h2>
+      <h2 className="text-base font-bold">{transacao ? 'Editar transação' : 'Nova transação'}</h2>
 
       <div className="grid gap-3.5 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
         <Campo rotulo="Categoria" erro={errors.categoriaId?.message}>
-          <select {...register('categoriaId')} className={classeCampo(!!errors.categoriaId)}>
+          <select {...register('categoriaId')} className={`${classeCampo(!!errors.categoriaId)} ${corDoTipo(selecionada)}`}>
             <option value="">Selecione</option>
-            <optgroup label="Despesas">
-              {disponiveis.filter((c) => c.tipo === 'DESPESA').map((c) => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Receitas">
-              {disponiveis.filter((c) => c.tipo === 'RECEITA').map((c) => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </optgroup>
+            <OpcoesPorTipo categorias={disponiveis} />
           </select>
         </Campo>
         <Campo rotulo="Valor" erro={errors.valor?.message}>
@@ -119,9 +117,17 @@ export function FormularioTransacao({ transacao, categorias, aoConcluir }: Props
       </div>
 
       <p className="text-[13px] text-texto-suave">
-        {selecionada
-          ? `Será registrada como ${selecionada.tipo === 'RECEITA' ? 'receita' : 'despesa'}, o tipo da categoria escolhida.`
-          : 'O tipo (receita ou despesa) vem da categoria escolhida.'}
+        {selecionada ? (
+          <>
+            Será registrada como{' '}
+            <strong className={corDoTipo(selecionada)}>
+              {selecionada.tipo === 'RECEITA' ? 'receita' : 'despesa'}
+            </strong>
+            , o tipo da categoria escolhida.
+          </>
+        ) : (
+          'O tipo (receita ou despesa) vem da categoria escolhida.'
+        )}
       </p>
 
       {erroGeral && <Alerta>{erroGeral}</Alerta>}

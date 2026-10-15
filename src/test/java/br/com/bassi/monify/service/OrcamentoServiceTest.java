@@ -2,6 +2,7 @@ package br.com.bassi.monify.service;
 
 import br.com.bassi.monify.domain.Categoria;
 import br.com.bassi.monify.domain.Orcamento;
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.StatusOrcamento;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import br.com.bassi.monify.dto.DefinirOrcamentoRequest;
@@ -59,7 +60,7 @@ class OrcamentoServiceTest {
 
     private OrcamentoService orcamentoService;
 
-    private final Categoria mercado = new Categoria(USUARIO_ID, "Mercado", TipoTransacao.DESPESA, "#FF0000");
+    private final Categoria mercado = new Categoria(USUARIO_ID, "Mercado", TipoTransacao.DESPESA, "#FF0000", IconeCategoria.ETIQUETA);
 
     @BeforeEach
     void setUp() {

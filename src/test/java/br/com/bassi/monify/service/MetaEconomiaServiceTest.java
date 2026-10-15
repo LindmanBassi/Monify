@@ -2,6 +2,7 @@ package br.com.bassi.monify.service;
 
 import br.com.bassi.monify.domain.Categoria;
 import br.com.bassi.monify.domain.MetaEconomia;
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.StatusMetaEconomia;
 import br.com.bassi.monify.domain.enums.TipoReferencia;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
@@ -61,7 +62,7 @@ class MetaEconomiaServiceTest {
 
     private MetaEconomiaService metaEconomiaService;
 
-    private final Categoria mercado = new Categoria(USUARIO_ID, "Mercado", TipoTransacao.DESPESA, "#FF0000");
+    private final Categoria mercado = new Categoria(USUARIO_ID, "Mercado", TipoTransacao.DESPESA, "#FF0000", IconeCategoria.ETIQUETA);
 
     @BeforeEach
     void setUp() {

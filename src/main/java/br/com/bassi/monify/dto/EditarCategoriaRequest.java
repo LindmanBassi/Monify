@@ -1,6 +1,8 @@
 package br.com.bassi.monify.dto;
 
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -12,5 +14,8 @@ public record EditarCategoriaRequest(
 
         @NotBlank(message = "Cor é obrigatória")
         @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Cor deve estar no formato hexadecimal #RRGGBB")
-        String cor) {
+        String cor,
+
+        @NotNull(message = "Ícone é obrigatório")
+        IconeCategoria icone) {
 }

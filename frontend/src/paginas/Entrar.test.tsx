@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { definirTokenAcesso } from '../api/cliente'
-import { respostaJson, simularApi } from '../testes/api'
+import { respostaJson, rotasDoDashboardVazio, simularApi } from '../testes/api'
 import { renderizarAplicacao } from '../testes/renderizar'
 
 const usuario = { id: '1', nome: 'Ana Souza', email: 'ana@email.com' }
@@ -29,13 +29,14 @@ describe('Entrar', () => {
     simularApi({
       '/api/auth/renovar': () => respostaJson(200, { tokenAcesso: 'token', tipo: 'Bearer', expiraEmSegundos: 900 }),
       '/api/usuarios/me': () => respostaJson(200, usuario),
+      ...rotasDoDashboardVazio(),
     })
 
     // Act
     renderizarAplicacao('/')
 
     // Assert
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Olá, Ana' })).toBeInTheDocument()
     expect(screen.getByText('Ana Souza')).toBeInTheDocument()
   })
 
@@ -77,6 +78,7 @@ describe('Entrar', () => {
       '/api/auth/renovar': () => respostaJson(401, {}),
       '/api/auth/login': () => respostaJson(200, { tokenAcesso: 'token', tipo: 'Bearer', expiraEmSegundos: 900 }),
       '/api/usuarios/me': () => respostaJson(200, usuario),
+      ...rotasDoDashboardVazio(),
     })
     const router = renderizarAplicacao('/entrar')
     const usuarioEvento = userEvent.setup()
@@ -88,7 +90,7 @@ describe('Entrar', () => {
     await usuarioEvento.click(screen.getByRole('button', { name: 'Entrar' }))
 
     // Assert
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Olá, Ana' })).toBeInTheDocument()
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 
@@ -116,6 +118,7 @@ describe('Entrar', () => {
     simularApi({
       '/api/auth/renovar': () => respostaJson(200, { tokenAcesso: 'token', tipo: 'Bearer', expiraEmSegundos: 900 }),
       '/api/usuarios/me': () => respostaJson(200, usuario),
+      ...rotasDoDashboardVazio(),
       '/api/auth/logout': () => respostaJson(204),
     })
     const router = renderizarAplicacao('/')

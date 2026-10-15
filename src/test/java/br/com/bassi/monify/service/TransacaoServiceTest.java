@@ -2,6 +2,7 @@ package br.com.bassi.monify.service;
 
 import br.com.bassi.monify.domain.Categoria;
 import br.com.bassi.monify.domain.Transacao;
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import br.com.bassi.monify.dto.CriarTransacaoRequest;
 import br.com.bassi.monify.dto.EditarTransacaoRequest;
@@ -62,7 +63,7 @@ class TransacaoServiceTest {
     }
 
     private static Categoria categoriaComId(UUID id, String nome, TipoTransacao tipo) {
-        var categoria = new Categoria(USUARIO_ID, nome, tipo, "#FF0000");
+        var categoria = new Categoria(USUARIO_ID, nome, tipo, "#FF0000", IconeCategoria.ETIQUETA);
         ReflectionTestUtils.setField(categoria, "id", id);
         return categoria;
     }
