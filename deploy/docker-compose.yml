@@ -1,0 +1,55 @@
+services:
+  monify-web:
+    image: ${DOCKERHUB_USUARIO}/monify-web:${MONIFY_VERSAO:-latest}
+    container_name: monify-web
+    restart: unless-stopped
+    networks:
+      - proxy
+      - interna
+
+  monify-api:
+    image: ${DOCKERHUB_USUARIO}/monify-api:${MONIFY_VERSAO:-latest}
+    container_name: monify-api
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:mysql://monify-db:3306/monify
+      DB_USERNAME: monify
+      DB_PASSWORD: ${DB_SENHA:?defina DB_SENHA no .env}
+      JWT_SEGREDO: ${JWT_SEGREDO:?defina JWT_SEGREDO no .env}
+      COOKIE_SEGURO: "true"
+      TZ: UTC
+    mem_limit: 768m
+    depends_on:
+      monify-db:
+        condition: service_healthy
+    networks:
+      - interna
+
+  monify-db:
+    image: mysql:8.4
+    container_name: monify-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: monify
+      MYSQL_USER: monify
+      MYSQL_PASSWORD: ${DB_SENHA:?defina DB_SENHA no .env}
+      MYSQL_ROOT_PASSWORD: ${DB_SENHA_ROOT:?defina DB_SENHA_ROOT no .env}
+      TZ: UTC
+    volumes:
+      - monify-db-dados:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -umonify -p$$MYSQL_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - interna
+
+networks:
+  proxy:
+    external: true
+  interna:
+    internal: true
+
+volumes:
+  monify-db-dados:

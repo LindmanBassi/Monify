@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/LindmanBassi/Monify/actions/workflows/ci.yml/badge.svg)](https://github.com/LindmanBassi/Monify/actions/workflows/ci.yml)
 
-O **Monify** é uma **aplicação web de gestão financeira pessoal**, com backend em **Java 21 e Spring Boot**, frontend em **React** e deploy planejado na **AWS**. O foco do projeto está no **backend**: modelagem de domínio rica, regras de negócio testadas, persistência com **JPA/Hibernate e MySQL**, migrations versionadas com **Flyway** e testes de integração com **Testcontainers** em um banco real.
+O **Monify** é uma **aplicação web de gestão financeira pessoal**, com backend em **Java 21 e Spring Boot**, frontend em **React** e deploy com **Docker** em uma VPS. O foco do projeto está no **backend**: modelagem de domínio rica, regras de negócio testadas, persistência com **JPA/Hibernate e MySQL**, migrations versionadas com **Flyway** e testes de integração com **Testcontainers** em um banco real.
 
 O escopo atual é o **MVP de controle de gastos**: categorias, receitas e despesas, orçamentos mensais, metas de economia, metas de poupança e dashboard.
 
@@ -27,7 +27,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Metas de poupança (aportes, resgates e quanto guardar por mês)
 - [x] Dashboard (resumo do mês, comparação, totais por categoria e evolução de 6 meses)
 - [x] Frontend em React (login, sessão, dashboard com gráficos, transações, categorias, orçamentos e metas)
-- [ ] Deploy na AWS
+- [ ] Deploy em VPS com Docker (imagens no Docker Hub, proxy reverso e Cloudflare)
 
 ---
 
@@ -553,11 +553,12 @@ Frontend:
 - React 19 + TypeScript, com Vite
 - Tailwind CSS
 - React Router, TanStack Query, React Hook Form + Zod
+- Recharts (gráficos) e lucide-react (ícones)
 - Vitest + Testing Library
 
-Planejadas nas próximas etapas:
-- Recharts (gráficos do dashboard)
-- AWS
+Infraestrutura:
+- Docker (imagens da API e do frontend com nginx)
+- VPS Ubuntu com Nginx Proxy Manager e Cloudflare
 
 ---
 
@@ -628,6 +629,35 @@ Acesse **http://localhost:8080/swagger-ui.html**.
 1. Crie uma conta em `POST /api/auth/cadastro`
 2. Faça login em `POST /api/auth/login` e copie o `tokenAcesso` (o refresh token fica no cookie do navegador)
 3. Clique em **Authorize**, cole o token e teste as rotas protegidas
+
+---
+
+## 🌐 Deploy
+
+Produção roda em uma VPS com três containers, descritos em [`deploy/docker-compose.yml`](deploy/docker-compose.yml):
+
+| Container | Imagem | Papel | Redes |
+|---|---|---|---|
+| `monify-web` | `monify-web` (nginx) | Serve o React e repassa `/api` e o Swagger para a API | `proxy` e `interna` |
+| `monify-api` | `monify-api` (Spring Boot) | API REST | `interna` |
+| `monify-db` | `mysql:8.4` | Banco, com volume persistente | `interna` |
+
+- Só o `monify-web` fica na rede do proxy reverso; API e banco ficam em uma rede interna, sem portas publicadas.
+- Frontend e API no mesmo domínio: sem CORS, e o cookie de sessão (`Path=/api/auth`) funciona igual ao desenvolvimento.
+- A Cloudflare atende em HTTPS; o nginx repassa o esquema público (`CF-Visitor`) em `X-Forwarded-Proto`, e o Spring usa `server.forward-headers-strategy=native`.
+- Segredos (`JWT_SEGREDO`, senhas do banco) ficam só no `.env` da VPS; modelo em [`deploy/.env.example`](deploy/.env.example).
+
+Publicar uma versão (no PC, com `docker login` feito):
+
+```powershell
+./deploy/publicar.ps1 -Usuario <usuario-docker-hub> -Versao 1.0.0
+```
+
+Atualizar na VPS (`/opt/stacks/monify`):
+
+```bash
+docker compose pull && docker compose up -d
+```
 
 ---
 
