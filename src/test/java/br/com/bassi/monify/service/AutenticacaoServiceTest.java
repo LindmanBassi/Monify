@@ -6,7 +6,6 @@ import br.com.bassi.monify.domain.Usuario;
 import br.com.bassi.monify.domain.enums.CategoriaPadrao;
 import br.com.bassi.monify.dto.CadastroRequest;
 import br.com.bassi.monify.dto.LoginRequest;
-import br.com.bassi.monify.dto.TokenRenovacaoRequest;
 import br.com.bassi.monify.exception.ConflitoException;
 import br.com.bassi.monify.exception.NaoAutenticadoException;
 import br.com.bassi.monify.repository.CategoriaRepository;
@@ -205,7 +204,6 @@ class AutenticacaoServiceTest {
             //Assert
             assertEquals("token-acesso", response.tokenAcesso());
             assertEquals("novo-token-renovacao", response.tokenRenovacao());
-            assertEquals("Bearer", response.tipo());
             assertEquals(900L, response.expiraEmSegundos());
 
             verify(tokenRenovacaoRepository).save(tokenCaptor.capture());
@@ -219,7 +217,7 @@ class AutenticacaoServiceTest {
     @Nested
     class renovar {
 
-        private final TokenRenovacaoRequest request = new TokenRenovacaoRequest("token-renovacao");
+        private final String request = "token-renovacao";
 
         @Test
         @DisplayName("Deve lançar não autenticado quando o token de renovação não existir")
@@ -298,7 +296,7 @@ class AutenticacaoServiceTest {
             when(tokenRenovacaoRepository.findByTokenHash("hash-token-renovacao")).thenReturn(Optional.of(token));
 
             //Act
-            autenticacaoService.logout(new TokenRenovacaoRequest("token-renovacao"));
+            autenticacaoService.logout("token-renovacao");
 
             //Assert
             assertEquals(AGORA, token.getRevogadoEm());
@@ -313,7 +311,7 @@ class AutenticacaoServiceTest {
             when(tokenRenovacaoRepository.findByTokenHash("hash-token-renovacao")).thenReturn(Optional.empty());
 
             //Act & Assert
-            assertDoesNotThrow(() -> autenticacaoService.logout(new TokenRenovacaoRequest("token-renovacao")));
+            assertDoesNotThrow(() -> autenticacaoService.logout("token-renovacao"));
         }
     }
 }

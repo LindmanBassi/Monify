@@ -51,7 +51,7 @@ class CategoriaControllerTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"nome": "%s", "tipo": "%s", "cor": "%s"}
+                        {"nome": "%s", "tipo": "%s", "cor": "%s", "icone": "PATA"}
                         """.formatted(nome, tipo, cor)));
     }
 
@@ -65,7 +65,7 @@ class CategoriaControllerTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"nome": "%s", "cor": "%s"}
+                        {"nome": "%s", "cor": "%s", "icone": "CARRINHO"}
                         """.formatted(nome, cor)));
     }
 
@@ -90,6 +90,16 @@ class CategoriaControllerTest {
             mockMvc.perform(get("/api/categorias").header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenAna))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(CategoriaPadrao.values().length));
+        }
+
+        @Test
+        @DisplayName("Deve trazer as categorias padrão com os ícones correspondentes")
+        void deveTrazerCategoriasPadraoComIcones() throws Exception {
+
+            //Act & Assert
+            mockMvc.perform(get("/api/categorias").header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenAna))
+                    .andExpect(jsonPath("$[?(@.nome == 'Moradia')].icone").value(hasItem("CASA")))
+                    .andExpect(jsonPath("$[?(@.nome == 'Salário')].icone").value(hasItem("MALETA")));
         }
 
         @Test
@@ -163,6 +173,7 @@ class CategoriaControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.nome").value("Pets"))
                     .andExpect(jsonPath("$.tipo").value("DESPESA"))
+                    .andExpect(jsonPath("$.icone").value("PATA"))
                     .andExpect(jsonPath("$.arquivada").value(false))
                     .andReturn().getResponse();
 
@@ -207,6 +218,22 @@ class CategoriaControllerTest {
             criar(tokenAna, "Pets", "DESPESA", "vermelho")
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$['campos-invalidos'][0].campo").value("cor"));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 400 quando o ícone não for informado")
+        void deveRetornar400QuandoIconeAusente() throws Exception {
+
+            //Act & Assert
+            mockMvc.perform(post("/api/categorias")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenAna)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"nome": "Pets", "tipo": "DESPESA", "cor": "#123456"}
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$['campos-invalidos'][0].campo").value("icone"))
+                    .andExpect(jsonPath("$['campos-invalidos'][0].mensagem").value("Ícone é obrigatório"));
         }
 
         @Test
@@ -262,7 +289,7 @@ class CategoriaControllerTest {
     class editar {
 
         @Test
-        @DisplayName("Deve editar nome e cor e retornar 204")
+        @DisplayName("Deve editar nome, cor e ícone e retornar 204")
         void deveEditarCategoria() throws Exception {
 
             //Arrange
@@ -275,6 +302,7 @@ class CategoriaControllerTest {
             buscar(tokenAna, id)
                     .andExpect(jsonPath("$.nome").value("Animais"))
                     .andExpect(jsonPath("$.cor").value("#000000"))
+                    .andExpect(jsonPath("$.icone").value("CARRINHO"))
                     .andExpect(jsonPath("$.tipo").value("DESPESA"));
         }
 

@@ -1,6 +1,7 @@
 package br.com.bassi.monify.service;
 
 import br.com.bassi.monify.domain.Categoria;
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import br.com.bassi.monify.dto.CriarCategoriaRequest;
 import br.com.bassi.monify.dto.EditarCategoriaRequest;
@@ -43,7 +44,7 @@ class CategoriaServiceTest {
     private ArgumentCaptor<Categoria> categoriaCaptor;
 
     private Categoria mercado() {
-        return new Categoria(USUARIO_ID, "Mercado", TipoTransacao.DESPESA, "#FF0000");
+        return new Categoria(USUARIO_ID, "Mercado", TipoTransacao.DESPESA, "#FF0000", IconeCategoria.ETIQUETA);
     }
 
     @Nested
@@ -71,7 +72,7 @@ class CategoriaServiceTest {
         void deveCriarCategoriaParaUsuario() {
 
             //Arrange
-            var request = new CriarCategoriaRequest(" Pets ", TipoTransacao.DESPESA, "#123456");
+            var request = new CriarCategoriaRequest(" Pets ", TipoTransacao.DESPESA, "#123456", IconeCategoria.PATA);
             when(categoriaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             //Act
@@ -83,6 +84,7 @@ class CategoriaServiceTest {
             assertTrue(salva.pertenceA(USUARIO_ID));
             assertEquals("Pets", salva.getNome());
             assertEquals(TipoTransacao.DESPESA, salva.getTipo());
+            assertEquals(IconeCategoria.PATA, salva.getIcone());
             assertEquals("#123456", response.cor());
         }
 
@@ -91,7 +93,7 @@ class CategoriaServiceTest {
         void deveLancarConflitoQuandoNomeDuplicado() {
 
             //Arrange
-            var request = new CriarCategoriaRequest("Mercado", TipoTransacao.DESPESA, "#123456");
+            var request = new CriarCategoriaRequest("Mercado", TipoTransacao.DESPESA, "#123456", IconeCategoria.CARRINHO);
             when(categoriaRepository.existsByUsuarioIdAndNomeAndTipo(USUARIO_ID, "Mercado", TipoTransacao.DESPESA))
                     .thenReturn(true);
 
@@ -106,19 +108,20 @@ class CategoriaServiceTest {
     class editar {
 
         @Test
-        @DisplayName("Deve editar nome e cor da categoria do usuário")
-        void deveEditarNomeECor() {
+        @DisplayName("Deve editar nome, cor e ícone da categoria do usuário")
+        void deveEditarNomeCorEIcone() {
 
             //Arrange
             var categoria = mercado();
             when(categoriaRepository.findByIdAndUsuarioId(CATEGORIA_ID, USUARIO_ID)).thenReturn(Optional.of(categoria));
 
             //Act
-            categoriaService.editar(USUARIO_ID, CATEGORIA_ID, new EditarCategoriaRequest("Supermercado", "#00FF00"));
+            categoriaService.editar(USUARIO_ID, CATEGORIA_ID, new EditarCategoriaRequest("Supermercado", "#00FF00", IconeCategoria.CARRINHO));
 
             //Assert
             assertEquals("Supermercado", categoria.getNome());
             assertEquals("#00FF00", categoria.getCor());
+            assertEquals(IconeCategoria.CARRINHO, categoria.getIcone());
         }
 
         @Test
@@ -132,7 +135,7 @@ class CategoriaServiceTest {
 
             //Act & Assert
             assertThrows(ConflitoException.class,
-                    () -> categoriaService.editar(USUARIO_ID, CATEGORIA_ID, new EditarCategoriaRequest("Lazer", "#00FF00")));
+                    () -> categoriaService.editar(USUARIO_ID, CATEGORIA_ID, new EditarCategoriaRequest("Lazer", "#00FF00", IconeCategoria.CLAQUETE)));
         }
     }
 

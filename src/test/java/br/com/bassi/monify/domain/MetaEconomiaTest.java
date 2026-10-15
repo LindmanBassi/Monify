@@ -1,5 +1,6 @@
 package br.com.bassi.monify.domain;
 
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.StatusMetaEconomia;
 import br.com.bassi.monify.domain.enums.TipoReferencia;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
@@ -23,7 +24,7 @@ class MetaEconomiaTest {
     private static final Instant AGORA = Instant.parse("2026-10-09T12:00:00Z");
 
     private final UUID usuarioId = UUID.randomUUID();
-    private final Categoria mercado = new Categoria(usuarioId, "Mercado", TipoTransacao.DESPESA, "#FF0000");
+    private final Categoria mercado = new Categoria(usuarioId, "Mercado", TipoTransacao.DESPESA, "#FF0000", IconeCategoria.ETIQUETA);
 
     private MetaEconomia metaMesAnterior(YearMonth mes, String economia) {
         return new MetaEconomia(usuarioId, mercado, mes, TipoReferencia.MES_ANTERIOR, null,
@@ -65,7 +66,7 @@ class MetaEconomiaTest {
         void deveLancarExcecaoQuandoCategoriaDeReceita() {
 
             //Arrange
-            var salario = new Categoria(usuarioId, "Salário", TipoTransacao.RECEITA, "#00FF00");
+            var salario = new Categoria(usuarioId, "Salário", TipoTransacao.RECEITA, "#00FF00", IconeCategoria.ETIQUETA);
 
             //Act & Assert
             assertThrows(RegraNegocioException.class, () -> new MetaEconomia(usuarioId, salario, OUTUBRO,

@@ -1,5 +1,6 @@
 package br.com.bassi.monify.domain;
 
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import br.com.bassi.monify.exception.RegraNegocioException;
 import jakarta.persistence.*;
@@ -32,19 +33,25 @@ public class Categoria extends EntidadeBase {
     @Column(name = "cor", nullable = false, length = 7)
     private String cor;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "icone", nullable = false, length = 20)
+    private IconeCategoria icone;
+
     @Column(name = "arquivada", nullable = false)
     private boolean arquivada;
 
-    public Categoria(UUID usuarioId, String nome, TipoTransacao tipo, String cor) {
+    public Categoria(UUID usuarioId, String nome, TipoTransacao tipo, String cor, IconeCategoria icone) {
         this.usuarioId = usuarioId;
         this.nome = nome.trim();
         this.tipo = tipo;
         this.cor = cor;
+        this.icone = icone;
     }
 
-    public void editar(String nome, String cor) {
+    public void editar(String nome, String cor, IconeCategoria icone) {
         this.nome = nome.trim();
         this.cor = cor;
+        this.icone = icone;
     }
 
     // remover = arquivar

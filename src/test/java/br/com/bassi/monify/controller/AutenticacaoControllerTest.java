@@ -1,10 +1,12 @@
 package br.com.bassi.monify.controller;
 
 import br.com.bassi.monify.TestcontainersConfiguration;
+import br.com.bassi.monify.config.CookieTokenRenovacao;
 import br.com.bassi.monify.domain.enums.CategoriaPadrao;
 import br.com.bassi.monify.repository.CategoriaRepository;
 import br.com.bassi.monify.repository.UsuarioRepository;
 import com.jayway.jsonpath.JsonPath;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
@@ -67,16 +70,19 @@ class AutenticacaoControllerTest {
 
     private ResultActions renovar(String tokenRenovacao) throws Exception {
         return mockMvc.perform(post("/api/auth/renovar")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"tokenRenovacao": "%s"}
-                        """.formatted(tokenRenovacao)));
+                .cookie(new Cookie(CookieTokenRenovacao.NOME, tokenRenovacao)));
+    }
+
+    // o refresh token chega só pelo cabeçalho Set-Cookie
+    private String tokenRenovacaoDo(ResultActions resultado) {
+        var setCookie = resultado.andReturn().getResponse().getHeader(HttpHeaders.SET_COOKIE);
+        var inicio = setCookie.indexOf('=') + 1;
+        return setCookie.substring(inicio, setCookie.indexOf(';'));
     }
 
     private String tokenRenovacaoDoLogin() throws Exception {
         cadastrar("Henrique", EMAIL, SENHA);
-        var resposta = login(EMAIL, SENHA).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(resposta, "$.tokenRenovacao");
+        return tokenRenovacaoDo(login(EMAIL, SENHA));
     }
 
     @Nested
@@ -131,19 +137,28 @@ class AutenticacaoControllerTest {
     class login {
 
         @Test
-        @DisplayName("Deve retornar os tokens quando as credenciais forem válidas")
+        @DisplayName("Deve retornar o token de acesso no corpo e o de renovação em cookie httpOnly")
         void deveRetornarTokensQuandoCredenciaisValidas() throws Exception {
 
             //Arrange
             cadastrar("Henrique", EMAIL, SENHA);
 
-            //Act & Assert
-            login(EMAIL, SENHA)
+            //Act
+            var resultado = login(EMAIL, SENHA)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.tokenAcesso").isNotEmpty())
-                    .andExpect(jsonPath("$.tokenRenovacao").isNotEmpty())
+                    .andExpect(jsonPath("$.tokenRenovacao").doesNotExist())
                     .andExpect(jsonPath("$.tipo").value("Bearer"))
                     .andExpect(jsonPath("$.expiraEmSegundos").value(900));
+
+            //Assert
+            var setCookie = resultado.andReturn().getResponse().getHeader(HttpHeaders.SET_COOKIE);
+            assertTrue(setCookie.startsWith(CookieTokenRenovacao.NOME + "="));
+            assertTrue(setCookie.contains("HttpOnly"));
+            assertTrue(setCookie.contains("Secure"));
+            assertTrue(setCookie.contains("SameSite=Strict"));
+            assertTrue(setCookie.contains("Path=/api/auth"));
+            assertTrue(setCookie.contains("Max-Age=604800"));
         }
 
         @Test
@@ -181,12 +196,12 @@ class AutenticacaoControllerTest {
             var tokenUsado = tokenRenovacaoDoLogin();
 
             //Act
-            var resposta = renovar(tokenUsado)
+            var resultado = renovar(tokenUsado)
                     .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString();
+                    .andExpect(jsonPath("$.tokenAcesso").isNotEmpty());
 
             //Assert
-            String novoToken = JsonPath.read(resposta, "$.tokenRenovacao");
+            var novoToken = tokenRenovacaoDo(resultado);
             assertNotEquals(tokenUsado, novoToken);
             renovar(novoToken).andExpect(status().isOk());
         }
@@ -197,8 +212,7 @@ class AutenticacaoControllerTest {
 
             //Arrange
             var tokenUsado = tokenRenovacaoDoLogin();
-            var resposta = renovar(tokenUsado).andReturn().getResponse().getContentAsString();
-            String novoToken = JsonPath.read(resposta, "$.tokenRenovacao");
+            var novoToken = tokenRenovacaoDo(renovar(tokenUsado));
 
             //Act
             renovar(tokenUsado)
@@ -218,6 +232,16 @@ class AutenticacaoControllerTest {
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.detail").value("Token de renovação inválido"));
         }
+
+        @Test
+        @DisplayName("Deve retornar 401 quando o cookie de renovação não for enviado")
+        void deveRetornar401SemCookie() throws Exception {
+
+            //Act & Assert
+            mockMvc.perform(post("/api/auth/renovar"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.detail").value("Sessão expirada. Faça login novamente"));
+        }
     }
 
     @Nested
@@ -231,15 +255,22 @@ class AutenticacaoControllerTest {
             var tokenRenovacao = tokenRenovacaoDoLogin();
 
             //Act
-            mockMvc.perform(post("/api/auth/logout")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {"tokenRenovacao": "%s"}
-                                    """.formatted(tokenRenovacao)))
-                    .andExpect(status().isNoContent());
+            var setCookie = mockMvc.perform(post("/api/auth/logout")
+                            .cookie(new Cookie(CookieTokenRenovacao.NOME, tokenRenovacao)))
+                    .andExpect(status().isNoContent())
+                    .andReturn().getResponse().getHeader(HttpHeaders.SET_COOKIE);
 
             //Assert
+            assertTrue(setCookie.contains("Max-Age=0"));
             renovar(tokenRenovacao).andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("Deve retornar 204 mesmo sem cookie de renovação")
+        void deveRetornar204SemCookie() throws Exception {
+
+            //Act & Assert
+            mockMvc.perform(post("/api/auth/logout")).andExpect(status().isNoContent());
         }
     }
 }

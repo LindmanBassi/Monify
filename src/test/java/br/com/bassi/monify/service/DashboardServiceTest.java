@@ -1,6 +1,7 @@
 package br.com.bassi.monify.service;
 
 import br.com.bassi.monify.domain.Categoria;
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import br.com.bassi.monify.repository.TotalMensalPorTipo;
 import br.com.bassi.monify.repository.TotalPorCategoria;
@@ -58,7 +59,7 @@ class DashboardServiceTest {
     }
 
     private static PorCategoria porCategoria(String nome, TipoTransacao tipo, String total) {
-        return new PorCategoria(new Categoria(USUARIO_ID, nome, tipo, "#FF0000"), new BigDecimal(total));
+        return new PorCategoria(new Categoria(USUARIO_ID, nome, tipo, "#FF0000", IconeCategoria.ETIQUETA), new BigDecimal(total));
     }
 
     private void prepararMeses(List<Mensal> totais) {

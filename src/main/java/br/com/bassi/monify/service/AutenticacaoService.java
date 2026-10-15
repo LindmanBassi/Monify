@@ -5,8 +5,6 @@ import br.com.bassi.monify.domain.Usuario;
 import br.com.bassi.monify.domain.enums.CategoriaPadrao;
 import br.com.bassi.monify.dto.CadastroRequest;
 import br.com.bassi.monify.dto.LoginRequest;
-import br.com.bassi.monify.dto.TokenRenovacaoRequest;
-import br.com.bassi.monify.dto.TokensResponse;
 import br.com.bassi.monify.dto.UsuarioResponse;
 import br.com.bassi.monify.exception.ConflitoException;
 import br.com.bassi.monify.exception.NaoAutenticadoException;
@@ -25,8 +23,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AutenticacaoService {
-
-    private static final String TIPO_TOKEN = "Bearer";
 
     private final UsuarioRepository usuarioRepository;
     private final CategoriaRepository categoriaRepository;
@@ -55,7 +51,7 @@ public class AutenticacaoService {
 
     // mensagem genérica: não revela se o e-mail existe
     @Transactional
-    public TokensResponse login(LoginRequest request) {
+    public SessaoEmitida login(LoginRequest request) {
 
         var usuario = usuarioRepository.findByEmail(Usuario.normalizarEmail(request.email()))
                 .filter(u -> passwordEncoder.matches(request.senha(), u.getSenhaHash()))
@@ -66,10 +62,10 @@ public class AutenticacaoService {
 
     // rotação: o token usado é revogado e um novo par é emitido
     @Transactional(noRollbackFor = NaoAutenticadoException.class)
-    public TokensResponse renovar(TokenRenovacaoRequest request) {
+    public SessaoEmitida renovar(String tokenRenovacao) {
 
         var agora = Instant.now(clock);
-        var token = buscarTokenRenovacao(request.tokenRenovacao());
+        var token = buscarTokenRenovacao(tokenRenovacao);
 
         // 1. reuso de token revogado: revoga todos os tokens do usuário e exige novo login
         if (token.isRevogado()) {
@@ -88,9 +84,9 @@ public class AutenticacaoService {
     }
 
     @Transactional
-    public void logout(TokenRenovacaoRequest request) {
+    public void logout(String tokenRenovacao) {
 
-        tokenRenovacaoRepository.findByTokenHash(tokenService.calcularHash(request.tokenRenovacao()))
+        tokenRenovacaoRepository.findByTokenHash(tokenService.calcularHash(tokenRenovacao))
                 .ifPresent(token -> token.revogar(Instant.now(clock)));
     }
 
@@ -99,7 +95,7 @@ public class AutenticacaoService {
                 .orElseThrow(() -> new NaoAutenticadoException("Token de renovação inválido"));
     }
 
-    private TokensResponse emitirTokens(UUID usuarioId) {
+    private SessaoEmitida emitirTokens(UUID usuarioId) {
 
         var tokenAcesso = tokenService.gerarTokenAcesso(usuarioId);
         var tokenRenovacao = tokenService.gerarTokenRenovacao();
@@ -109,6 +105,6 @@ public class AutenticacaoService {
                 tokenService.calcularHash(tokenRenovacao),
                 tokenService.calcularExpiracaoTokenRenovacao()));
 
-        return new TokensResponse(tokenAcesso, tokenRenovacao, TIPO_TOKEN, tokenService.duracaoTokenAcessoEmSegundos());
+        return new SessaoEmitida(tokenAcesso, tokenRenovacao, tokenService.duracaoTokenAcessoEmSegundos());
     }
 }

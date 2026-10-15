@@ -1,5 +1,6 @@
 package br.com.bassi.monify.domain;
 
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.StatusOrcamento;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import br.com.bassi.monify.exception.RegraNegocioException;
@@ -22,7 +23,7 @@ class OrcamentoTest {
     private static final YearMonth NOVEMBRO = YearMonth.of(2026, 11);
 
     private final UUID usuarioId = UUID.randomUUID();
-    private final Categoria mercado = new Categoria(usuarioId, "Mercado", TipoTransacao.DESPESA, "#FF0000");
+    private final Categoria mercado = new Categoria(usuarioId, "Mercado", TipoTransacao.DESPESA, "#FF0000", IconeCategoria.ETIQUETA);
 
     private Orcamento orcamentoDeMil() {
         return new Orcamento(usuarioId, mercado, OUTUBRO, new BigDecimal("1000"), OUTUBRO);
@@ -59,7 +60,7 @@ class OrcamentoTest {
         void deveLancarExcecaoQuandoCategoriaDeReceita() {
 
             //Arrange
-            var salario = new Categoria(usuarioId, "Salário", TipoTransacao.RECEITA, "#00FF00");
+            var salario = new Categoria(usuarioId, "Salário", TipoTransacao.RECEITA, "#00FF00", IconeCategoria.ETIQUETA);
 
             //Act & Assert
             assertThrows(RegraNegocioException.class,
