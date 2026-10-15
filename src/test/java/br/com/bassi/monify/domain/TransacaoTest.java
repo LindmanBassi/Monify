@@ -1,5 +1,6 @@
 package br.com.bassi.monify.domain;
 
+import br.com.bassi.monify.domain.enums.IconeCategoria;
 import br.com.bassi.monify.domain.enums.TipoTransacao;
 import br.com.bassi.monify.exception.RegraNegocioException;
 import org.junit.jupiter.api.DisplayName;
@@ -22,7 +23,7 @@ class TransacaoTest {
     private final Categoria salario = categoriaComId("Salário", TipoTransacao.RECEITA);
 
     private Categoria categoriaComId(String nome, TipoTransacao tipo) {
-        var categoria = new Categoria(usuarioId, nome, tipo, "#FF0000");
+        var categoria = new Categoria(usuarioId, nome, tipo, "#FF0000", IconeCategoria.ETIQUETA);
         ReflectionTestUtils.setField(categoria, "id", UUID.randomUUID());
         return categoria;
     }
