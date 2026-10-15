@@ -27,7 +27,7 @@ export function SeletorCor({ valor, aoMudar }: Props) {
           type="color"
           value={valor}
           onChange={(evento) => aoMudar(evento.target.value.toUpperCase())}
-          className="size-8 cursor-pointer rounded-full border border-borda-campo bg-superficie p-0.5"
+          className="size-8 cursor-pointer rounded-full border border-borda bg-superficie p-0.5"
         />
         Outra cor
       </label>

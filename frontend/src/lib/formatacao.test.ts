@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { converterValor, formatarData, formatarMoeda, hojeEmSaoPaulo, valorParaCampo } from './formatacao'
+import {
+  converterValor,
+  formatarData,
+  formatarMes,
+  formatarMesAbreviado,
+  formatarMoeda,
+  formatarPercentual,
+  hojeEmSaoPaulo,
+  mesAtualEmSaoPaulo,
+  partesDaMoeda,
+  somarMeses,
+  valorParaCampo,
+} from './formatacao'
 
 describe('formatarMoeda', () => {
   it('deve formatar em reais com separadores brasileiros', () => {
@@ -43,5 +55,48 @@ describe('valorParaCampo', () => {
   it('deve exibir o valor com vírgula e duas casas', () => {
     // Act & Assert
     expect(valorParaCampo(52.9)).toBe('52,90')
+  })
+})
+
+describe('mesAtualEmSaoPaulo', () => {
+  it('deve continuar no mês anterior até a meia-noite de São Paulo', () => {
+    // Act & Assert
+    expect(mesAtualEmSaoPaulo(new Date('2026-11-01T02:00:00Z'))).toBe('2026-10')
+  })
+})
+
+describe('somarMeses', () => {
+  it.each([
+    ['2026-10', 1, '2026-11'],
+    ['2026-12', 1, '2027-01'],
+    ['2026-01', -1, '2025-12'],
+    ['2026-03', -5, '2025-10'],
+  ])('deve somar a %s o total de %s mês(es)', (mes, quantidade, esperado) => {
+    // Act & Assert
+    expect(somarMeses(mes, quantidade)).toBe(esperado)
+  })
+})
+
+describe('formatarMes', () => {
+  it('deve escrever o mês por extenso', () => {
+    // Act & Assert
+    expect(formatarMes('2026-10')).toBe('outubro de 2026')
+    expect(formatarMesAbreviado('2026-10')).toBe('out.')
+  })
+})
+
+describe('formatarPercentual', () => {
+  it('deve usar no máximo uma casa decimal', () => {
+    // Act & Assert
+    expect(formatarPercentual(83.33)).toBe('83,3%')
+    expect(formatarPercentual(112)).toBe('112%')
+  })
+})
+
+describe('partesDaMoeda', () => {
+  it('deve separar sinal, símbolo e número', () => {
+    // Act & Assert
+    expect(partesDaMoeda(1234.5)).toEqual({ sinal: '', simbolo: 'R$', numero: '1.234,50' })
+    expect(partesDaMoeda(-850.5)).toEqual({ sinal: '−', simbolo: 'R$', numero: '850,50' })
   })
 })

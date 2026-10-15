@@ -9,16 +9,16 @@ import { respostaJson, rotasDeSessao, simularApi, type RequisicaoSimulada } from
 import { renderizarAplicacao } from '../../testes/renderizar'
 
 const categorias: Categoria[] = [
-  { id: 'c1', nome: 'Alimentação', tipo: 'DESPESA', cor: '#F97316', arquivada: false },
-  { id: 'c2', nome: 'Viagens', tipo: 'DESPESA', cor: '#3B82F6', arquivada: true },
-  { id: 'c3', nome: 'Salário', tipo: 'RECEITA', cor: '#22C55E', arquivada: false },
+  { id: 'c1', nome: 'Alimentação', tipo: 'DESPESA', cor: '#F97316', icone: 'ETIQUETA', arquivada: false },
+  { id: 'c2', nome: 'Viagens', tipo: 'DESPESA', cor: '#3B82F6', icone: 'ETIQUETA', arquivada: true },
+  { id: 'c3', nome: 'Salário', tipo: 'RECEITA', cor: '#22C55E', icone: 'ETIQUETA', arquivada: false },
 ]
 
 function transacoesIniciais(): Transacao[] {
   return [
-    { id: 't1', categoria: { id: 'c1', nome: 'Alimentação', cor: '#F97316', arquivada: false }, tipo: 'DESPESA', valor: 320, descricao: 'Mercado do mês', dataOcorrencia: '2026-10-14' },
-    { id: 't2', categoria: { id: 'c3', nome: 'Salário', cor: '#22C55E', arquivada: false }, tipo: 'RECEITA', valor: 5000, descricao: 'Salário de outubro', dataOcorrencia: '2026-10-05' },
-    { id: 't3', categoria: { id: 'c2', nome: 'Viagens', cor: '#3B82F6', arquivada: true }, tipo: 'DESPESA', valor: 1200, descricao: 'Passagem', dataOcorrencia: '2026-09-20' },
+    { id: 't1', categoria: { id: 'c1', nome: 'Alimentação', cor: '#F97316', icone: 'ETIQUETA', arquivada: false }, tipo: 'DESPESA', valor: 320, descricao: 'Mercado do mês', dataOcorrencia: '2026-10-14' },
+    { id: 't2', categoria: { id: 'c3', nome: 'Salário', cor: '#22C55E', icone: 'ETIQUETA', arquivada: false }, tipo: 'RECEITA', valor: 5000, descricao: 'Salário de outubro', dataOcorrencia: '2026-10-05' },
+    { id: 't3', categoria: { id: 'c2', nome: 'Viagens', cor: '#3B82F6', icone: 'ETIQUETA', arquivada: true }, tipo: 'DESPESA', valor: 1200, descricao: 'Passagem', dataOcorrencia: '2026-09-20' },
   ]
 }
 
@@ -70,7 +70,7 @@ describe('Transações', () => {
     expect(linhaDe('Mercado do mês').getByText('14/10/2026')).toBeInTheDocument()
     expect(linhaDe('Mercado do mês').getByText(/− R\$\s320,00/)).toBeInTheDocument()
     expect(linhaDe('Salário de outubro').getByText(/\+ R\$\s5\.000,00/)).toBeInTheDocument()
-    expect(screen.getByText('Mostrando 1–3 de 3 transações')).toBeInTheDocument()
+    expect(screen.getByText('3 transações')).toBeInTheDocument()
   })
 
   it('deve enviar os filtros escolhidos para a API', async () => {
@@ -166,7 +166,7 @@ describe('Transações', () => {
     // Act
     await usuario.click(linhaDe('Passagem').getByRole('button', { name: 'Editar Passagem' }))
     const formulario = within(screen.getByRole('form', { name: 'Editar transação' }))
-    expect(formulario.getByRole('option', { name: 'Viagens' })).toBeInTheDocument()
+    expect(formulario.getByRole('option', { name: 'Viagens (arquivada)' })).toBeInTheDocument()
     await usuario.clear(formulario.getByLabelText('Valor'))
     await usuario.type(formulario.getByLabelText('Valor'), '1300')
     await usuario.click(formulario.getByRole('button', { name: 'Salvar' }))

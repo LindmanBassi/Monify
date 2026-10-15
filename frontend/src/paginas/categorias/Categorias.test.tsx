@@ -8,10 +8,10 @@ import { renderizarAplicacao } from '../../testes/renderizar'
 
 function categoriasIniciais(): Categoria[] {
   return [
-    { id: 'c1', nome: 'Alimentação', tipo: 'DESPESA', cor: '#F97316', arquivada: false },
-    { id: 'c2', nome: 'Moradia', tipo: 'DESPESA', cor: '#8B5CF6', arquivada: false },
-    { id: 'c3', nome: 'Viagens', tipo: 'DESPESA', cor: '#3B82F6', arquivada: true },
-    { id: 'c4', nome: 'Salário', tipo: 'RECEITA', cor: '#22C55E', arquivada: false },
+    { id: 'c1', nome: 'Alimentação', tipo: 'DESPESA', cor: '#F97316', icone: 'ETIQUETA', arquivada: false },
+    { id: 'c2', nome: 'Moradia', tipo: 'DESPESA', cor: '#8B5CF6', icone: 'ETIQUETA', arquivada: false },
+    { id: 'c3', nome: 'Viagens', tipo: 'DESPESA', cor: '#3B82F6', icone: 'ETIQUETA', arquivada: true },
+    { id: 'c4', nome: 'Salário', tipo: 'RECEITA', cor: '#22C55E', icone: 'ETIQUETA', arquivada: false },
   ]
 }
 
@@ -86,12 +86,13 @@ describe('Categorias', () => {
 
     // Act
     await usuario.type(formulario.getByLabelText('Nome'), 'Pets')
+    await usuario.click(formulario.getByRole('radio', { name: 'Pata' }))
     await usuario.click(formulario.getByRole('radio', { name: 'Cor #8B5CF6' }))
     await usuario.click(formulario.getByRole('button', { name: 'Salvar' }))
 
     // Assert
     expect(await lista().findByText('Pets')).toBeInTheDocument()
-    expect(chamadas.find((c) => c.metodo === 'POST')?.corpo).toEqual({ nome: 'Pets', tipo: 'DESPESA', cor: '#8B5CF6' })
+    expect(chamadas.find((c) => c.metodo === 'POST')?.corpo).toEqual({ nome: 'Pets', tipo: 'DESPESA', cor: '#8B5CF6', icone: 'PATA' })
     expect(screen.queryByRole('form', { name: 'Nova categoria' })).not.toBeInTheDocument()
   })
 
@@ -136,7 +137,7 @@ describe('Categorias', () => {
     const moradia = within(lista().getByText('Moradia').closest('li')!)
 
     // Act
-    await usuario.click(moradia.getByRole('button', { name: 'Arquivar' }))
+    await usuario.click(moradia.getByRole('button', { name: 'Arquivar Moradia' }))
     expect(moradia.getByText(/metas de economia pendentes dela serão canceladas/)).toBeInTheDocument()
     await usuario.click(moradia.getByRole('button', { name: 'Arquivar' }))
 

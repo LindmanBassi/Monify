@@ -26,7 +26,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Metas de economia (referência congelada no início do mês e cancelamento automático)
 - [x] Metas de poupança (aportes, resgates e quanto guardar por mês)
 - [x] Dashboard (resumo do mês, comparação, totais por categoria e evolução de 6 meses)
-- [ ] Frontend em React — prontos: login, cadastro, sessão, menu, categorias e transações (dashboard, orçamentos e metas em construção)
+- [x] Frontend em React (login, sessão, dashboard com gráficos, transações, categorias, orçamentos e metas)
 - [ ] Deploy na AWS
 
 ---
@@ -101,7 +101,7 @@ Todas as rotas exigem token e enxergam apenas as categorias do próprio usuário
 | GET    | `/api/categorias`                      | Lista as ativas; filtros `tipo` e `incluirArquivadas`            |
 | GET    | `/api/categorias/{id}`                 | Detalhe da categoria                                             |
 | POST   | `/api/categorias`                      | Cria; **409** se já existir o mesmo nome no mesmo tipo           |
-| PUT    | `/api/categorias/{id}`                 | Edita nome e cor (o tipo é fixo)                                 |
+| PUT    | `/api/categorias/{id}`                 | Edita nome, cor e ícone (o tipo é fixo)                          |
 | DELETE | `/api/categorias/{id}`                 | Arquiva (remover = arquivar)                                     |
 | PATCH  | `/api/categorias/{id}/desarquivar`     | Volta a categoria para uso                                       |
 
@@ -211,10 +211,10 @@ Tudo é calculado com **duas consultas agregadas** no banco (`SUM ... GROUP BY`)
   "resumo": { "mes": "2026-10", "receitas": 6000.00, "despesas": 2000.00, "saldo": 4000.00 },
   "comparacaoMesAnterior": { "receitas": 50.00, "despesas": 25.00, "saldo": 66.67 },
   "gastosPorCategoria": [
-    { "categoria": { "nome": "Moradia", "cor": "#8B5CF6" }, "total": 1400.00, "percentual": 70.00 }
+    { "categoria": { "nome": "Moradia", "cor": "#8B5CF6", "icone": "CASA" }, "total": 1400.00, "percentual": 70.00 }
   ],
   "receitasPorCategoria": [
-    { "categoria": { "nome": "Salário", "cor": "#22C55E" }, "total": 5000.00, "percentual": 83.33 }
+    { "categoria": { "nome": "Salário", "cor": "#22C55E", "icone": "MALETA" }, "total": 5000.00, "percentual": 83.33 }
   ],
   "evolucaoMensal": [
     { "mes": "2026-05", "receitas": 0.00, "despesas": 0.00, "saldo": 0.00 }
@@ -300,8 +300,9 @@ classDiagram
         -String nome
         -TipoTransacao tipo
         -String cor
+        -IconeCategoria icone
         -boolean arquivada
-        +editar(nome, cor) void
+        +editar(nome, cor, icone) void
         +arquivar() void
         +desarquivar() void
         +isDespesa() boolean
@@ -385,6 +386,15 @@ classDiagram
         DESPESA
     }
 
+    class IconeCategoria {
+        <<enumeration>>
+        TALHERES
+        CASA
+        CARRO
+        ...
+        ETIQUETA
+    }
+
     class TipoReferencia {
         <<enumeration>>
         ORCAMENTO
@@ -431,6 +441,7 @@ classDiagram
     MetaPoupanca "1" *-- "*" Aporte : contém
 
     Categoria ..> TipoTransacao
+    Categoria ..> IconeCategoria
     Transacao ..> TipoTransacao
     Orcamento ..> StatusOrcamento
     MetaEconomia ..> TipoReferencia
