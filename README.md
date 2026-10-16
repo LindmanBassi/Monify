@@ -1,16 +1,43 @@
-# 💰 Monify – Gestão Financeira Pessoal com Spring Boot
+# 💰 Monify – Gestão Financeira Pessoal
 
 [![CI](https://github.com/LindmanBassi/Monify/actions/workflows/ci.yml/badge.svg)](https://github.com/LindmanBassi/Monify/actions/workflows/ci.yml)
+![Java 21](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)
+![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4-6DB33F?logo=springboot&logoColor=white)
+![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![MySQL 8.4](https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-deploy-2496ED?logo=docker&logoColor=white)
+[![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)](LICENSE)
+
+**🌐 [Abrir o Monify](https://monify.lindmandev.com)** · **📘 [Documentação da API (Swagger)](https://monify.lindmandev.com/swagger-ui/index.html)**
 
 O **Monify** é uma **aplicação web de gestão financeira pessoal**, com backend em **Java 21 e Spring Boot**, frontend em **React** e deploy com **Docker** em uma VPS. O foco do projeto está no **backend**: modelagem de domínio rica, regras de negócio testadas, persistência com **JPA/Hibernate e MySQL**, migrations versionadas com **Flyway** e testes de integração com **Testcontainers** em um banco real.
 
-O escopo atual é o **MVP de controle de gastos**: categorias, receitas e despesas, orçamentos mensais, metas de economia, metas de poupança e dashboard.
+- 💸 Receitas e despesas por categoria, com histórico filtrável
+- 📊 Orçamentos mensais com alerta a partir de 80% do limite
+- 🎯 Metas de economia comparadas ao seu histórico e metas de poupança com aportes
+- 📈 Dashboard com resumo do mês, comparação com o mês anterior e evolução de 6 meses
+- 🔐 JWT com refresh token rotativo em cookie httpOnly e isolamento total dos dados de cada usuário
+
+![Visão geral do Monify](docs/imagens/visao-geral.png)
+
+<details>
+<summary><strong>Mais telas</strong></summary>
+
+| Transações | Categorias |
+|---|---|
+| ![Transações](docs/imagens/transacoes.png) | ![Categorias](docs/imagens/categorias.png) |
+| **Orçamentos** | **Metas** |
+| ![Orçamentos](docs/imagens/orcamentos.png) | ![Metas](docs/imagens/metas.png) |
+| **Entrar** | **Celular** |
+| ![Entrar](docs/imagens/entrar.png) | <img src="docs/imagens/celular.png" alt="Visão geral no celular" width="260"> |
+
+</details>
 
 ---
 
 ## 🚧 Status do Projeto
 
-Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e com testes.
+MVP completo e em produção em **[monify.lindmandev.com](https://monify.lindmandev.com)**. Construído em passos pequenos, cada um compilando e com testes.
 
 - [x] Modelo de domínio (entidades, enums e regras de negócio)
 - [x] Schema do banco com Flyway
@@ -27,7 +54,7 @@ Projeto em desenvolvimento, construído em passos pequenos, cada um compilando e
 - [x] Metas de poupança (aportes, resgates e quanto guardar por mês)
 - [x] Dashboard (resumo do mês, comparação, totais por categoria e evolução de 6 meses)
 - [x] Frontend em React (login, sessão, dashboard com gráficos, transações, categorias, orçamentos e metas)
-- [ ] Deploy em VPS com Docker (imagens no Docker Hub, proxy reverso e Cloudflare)
+- [x] Deploy em VPS com Docker (imagens no Docker Hub, proxy reverso e Cloudflare)
 
 ---
 
@@ -658,6 +685,12 @@ Atualizar na VPS (`/opt/stacks/monify`):
 ```bash
 docker compose pull && docker compose up -d
 ```
+
+---
+
+## 📄 Licença
+
+Distribuído sob a licença MIT. Veja [LICENSE](LICENSE).
 
 ---
 
