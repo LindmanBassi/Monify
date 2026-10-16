@@ -3,7 +3,6 @@ param(
     [Parameter(Mandatory = $true)][string]$Versao
 )
 
-$ErrorActionPreference = 'Stop'
 $raiz = Split-Path -Parent $PSScriptRoot
 
 $imagens = @(
